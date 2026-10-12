@@ -1,0 +1,43 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Node / build (not used by this project, ignored just in case) ----
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+
+# ---- Environment / secrets ----
+.env
+.env.*
+*.local
+*.secret
+credentials.json
+secrets.json
+
+# ---- Vercel ----
+.vercel/
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# ---- Logs ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
