@@ -6,7 +6,10 @@ video and syntax-highlighted code.
 
 ## Open it
 
-Run this from the project folder (not by double-clicking `index.html`):
+**Live:** https://jaisimha16.github.io/friends-website/
+
+Or run it locally (a server is needed for the Copy-Code button — don't just
+double-click `index.html`):
 
 ```powershell
 python -m http.server 8000
