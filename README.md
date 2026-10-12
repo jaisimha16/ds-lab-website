@@ -15,8 +15,6 @@ double-click `index.html`):
 python -m http.server 8000
 ```
 
-Then open **http://127.0.0.1:8000/** in a browser.
-
 (A local server is needed so the Copy-Code clipboard button works. The site
 itself is plain HTML/CSS/JS — no build step, no framework.)
 
