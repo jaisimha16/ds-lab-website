@@ -6,8 +6,10 @@ video and syntax-highlighted code.
 
 ## Open it
 
+Run this from the project folder (not by double-clicking `index.html`):
+
 ```powershell
-python -m http.server 8000 --directory "C:\Users\jaisi\OneDrive\Desktop\MBU-Data-Science-Lab"
+python -m http.server 8000
 ```
 
 Then open **http://127.0.0.1:8000/** in a browser.
