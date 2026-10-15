@@ -1,62 +1,110 @@
 /* =====================================================================
-   store.js — persistence + CRUD for experiments, modules and experiment
-   meta (aim / theory / algorithm / output / result).
+   store.js — the data-access layer (the site's "database").
 
-   The project has no backend, so this is the "database" layer:
-     • data.js holds the default (seed) content
-     • any add / edit / delete is written to localStorage
-     • on the next page load the saved copy is applied over the defaults
+   READ  : Firestore document  site/content  — world-readable, so every
+           visitor sees the real content.
+   WRITE : the same document — allowed only for the administrator account,
+           enforced SERVER-SIDE by firestore.rules on Google's servers.
+           This file also refuses to write unless an admin is signed in,
+           but that is a convenience, not the security boundary.
 
-   It does not touch the DOM — app.js renders, this file only stores.
-   Exposed as window.DS_Store.
+   When Firebase is not configured (window.DS_FIREBASE_CONFIG === null)
+   the site stays in read-only "static" mode: content comes from data.js
+   and nobody — not even you — can edit through the website.
+
+   PUBLIC API (mutating methods return a Promise):
+     ready(cb)                    run cb once content has loaded
+     experiments() cards          LAB.experiments
+     modules()                    LAB.modules
+     meta()                       LAB.meta
+     student()                    LAB.student
+     nextId()                     next free experiment number
+     assignModule(expId, modId)   re-group an experiment
+     addExperiment(data)          → Promise
+     updateExperiment(id, data)   → Promise
+     deleteExperiment(id)         → Promise
+     saveStudent(obj)             → Promise
+     resetStudent()               → Promise
+     resetAll()                   → Promise
+     toolCount()                  number
+     hasSaved()                   boolean
    ===================================================================== */
 window.DS_Store = (function () {
   'use strict';
 
-  var LS_KEY = 'dslab-data-v1';
   var LAB = window.LAB = window.LAB || {};
+  var AUTH = window.DS_Auth || null;
 
-  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  var COLLECTION = 'site';
+  var DOC_ID = 'content';
 
-  /* the untouched seed data from data.js, kept for "reset" */
   var seed = {
+    student: clone(LAB.student || {}),
     experiments: clone(LAB.experiments || []),
     modules: clone(LAB.modules || []),
     meta: clone(LAB.meta || {})
   };
 
-  function readSaved() {
-    try {
-      var raw = localStorage.getItem(LS_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
-  }
+  var hasSaved = false;
+  var resolved = false;
+  var readyCbs = [];
 
-  var saved = readSaved();
-  var hasSaved = !!(saved && saved.experiments && saved.modules);
-  if (hasSaved) {
-    LAB.experiments = saved.experiments;
-    LAB.modules = saved.modules;
-    LAB.meta = saved.meta || {};
-  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
-  function persist() {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify({
-        experiments: LAB.experiments || [],
-        modules: LAB.modules || [],
-        meta: LAB.meta || {}
-      }));
-      hasSaved = true;
-      return true;
-    } catch (e) {
-      return false;
+  function db() {
+    if (window.firebase && window.firebase.apps && window.firebase.apps.length &&
+        typeof window.firebase.firestore === 'function') {
+      return window.firebase.firestore();
     }
+    return null;
   }
+
+  function configured() {
+    return !!(AUTH && AUTH.isConfigured && AUTH.isConfigured());
+  }
+
+  /* ---------------- load ---------------- */
+
+  function applyRemote(data) {
+    if (!data) return;
+    if (Array.isArray(data.experiments)) LAB.experiments = data.experiments;
+    if (Array.isArray(data.modules)) LAB.modules = data.modules;
+    if (data.meta && typeof data.meta === 'object') LAB.meta = data.meta;
+    if (data.student && typeof data.student === 'object') LAB.student = data.student;
+    if (Array.isArray(data.experiments) || Array.isArray(data.modules)) hasSaved = true;
+  }
+
+  function finishReady() {
+    if (resolved) return;
+    resolved = true;
+    var cbs = readyCbs.slice();
+    readyCbs = [];
+    cbs.forEach(function (cb) { try { cb(); } catch (e) {} });
+  }
+
+  function ready(cb) {
+    if (typeof cb === 'function') {
+      if (resolved) cb();
+      else readyCbs.push(cb);
+    }
+    if (resolved) return;
+
+    var store = db();
+    if (!store) { finishReady(); return; }
+
+    store.collection(COLLECTION).doc(DOC_ID).get().then(function (snap) {
+      if (snap && snap.exists) applyRemote(snap.data());
+    }).catch(function (err) {
+      console.warn('[DS_Store] could not load content from Firestore:', err && err.message);
+    }).then(finishReady, finishReady);
+  }
+
+  /* ---------------- helpers ---------------- */
 
   function experiments() { return LAB.experiments || []; }
   function modules() { return LAB.modules || []; }
   function meta() { return LAB.meta || (LAB.meta = {}); }
+  function student() { return LAB.student || (LAB.student = {}); }
 
   function nextId() {
     var max = 0;
@@ -83,85 +131,217 @@ window.DS_Store = (function () {
     }
   }
 
-  /* data = { id, name, summary, sections, moduleId, meta:{...} } */
-  function addExperiment(data) {
-    var m = data.meta || {};
-    delete data.meta;
-    if (data.id == null || data.id === '') data.id = nextId();
-    data.id = parseInt(data.id, 10);
-    data.createdAt = Date.now();
-    var moduleId = data.moduleId;
-    delete data.moduleId;
-    experiments().push(data);
-    meta()[data.id] = m;
-    if (moduleId != null && moduleId !== '') assignModule(data.id, moduleId);
-    persist();
-    return data;
-  }
-
-  function updateExperiment(oldId, data) {
-    var m = data.meta || {};
-    delete data.meta;
-    data.id = parseInt(data.id, 10);
-    var moduleId = data.moduleId;
-    delete data.moduleId;
-
-    var list = experiments();
-    for (var i = 0; i < list.length; i++) {
-      if (String(list[i].id) === String(oldId)) {
-        var created = list[i].createdAt;
-        var oldKey = list[i].id;
-        if (String(oldKey) !== String(data.id)) {
-          if (meta()[oldKey]) { meta()[data.id] = meta()[oldKey]; delete meta()[oldKey]; }
-          modules().forEach(function (mod) {
-            mod.expIds = (mod.expIds || []).map(function (x) {
-              return String(x) === String(oldId) ? data.id : x;
-            });
-          });
-        }
-        list[i] = data;
-        if (created) list[i].createdAt = created;
-        break;
-      }
-    }
-    meta()[data.id] = m;
-    if (moduleId != null && moduleId !== '') assignModule(data.id, moduleId);
-    persist();
-    return data;
-  }
-
-  function deleteExperiment(id) {
-    LAB.experiments = experiments().filter(function (e) { return String(e.id) !== String(id); });
-    if (meta()[id]) delete meta()[id];
-    modules().forEach(function (m) {
-      m.expIds = (m.expIds || []).filter(function (x) { return String(x) !== String(id); });
-    });
-    persist();
-  }
-
-  function resetAll() {
-    try { localStorage.removeItem(LS_KEY); } catch (e) {}
-    LAB.experiments = clone(seed.experiments);
-    LAB.modules = clone(seed.modules);
-    LAB.meta = clone(seed.meta);
-    hasSaved = false;
-  }
-
   function toolCount() {
     var n = 0;
     (LAB.tools || []).forEach(function (cat) { n += (cat.items || []).length; });
     return n;
   }
 
+  /* ---------------- write guard + persistence ---------------- */
+
+  function permissionError() {
+    var err = new Error('Only the administrator can make changes. Please sign in.');
+    err.code = 'permission-denied';
+    return err;
+  }
+
+  function requireAdmin() {
+    if (!configured()) {
+      return new Error('The editable backend is not configured yet. See the Admin setup steps in README.md.');
+    }
+    if (!AUTH || !AUTH.isAdmin || !AUTH.isAdmin()) return permissionError();
+    return null;
+  }
+
+  function snapshot() {
+    return {
+      student: student(),
+      experiments: experiments(),
+      modules: modules(),
+      meta: meta(),
+      updatedAt: Date.now(),
+      updatedBy: (AUTH && AUTH.uid && AUTH.uid()) || null
+    };
+  }
+
+  function backup() {
+    return {
+      student: clone(LAB.student || {}),
+      experiments: clone(LAB.experiments || []),
+      modules: clone(LAB.modules || []),
+      meta: clone(LAB.meta || {})
+    };
+  }
+
+  function restore(b) {
+    LAB.student = b.student;
+    LAB.experiments = b.experiments;
+    LAB.modules = b.modules;
+    LAB.meta = b.meta;
+  }
+
+  function commit() {
+    var guard = requireAdmin();
+    if (guard) return Promise.reject(guard);
+    var store = db();
+    if (!store) return Promise.reject(permissionError());
+    return store.collection(COLLECTION).doc(DOC_ID).set(snapshot()).then(function () {
+      hasSaved = true;
+      return true;
+    });
+  }
+
+  /* apply a synchronous mutation; persist it; roll back if the server
+     rejects the write (e.g. rules changed, offline) or the mutation throws */
+  function persist(mutate, value) {
+    var b = backup();
+    try {
+      mutate();
+    } catch (e) {
+      restore(b);
+      return Promise.reject(e);
+    }
+    return commit().then(function () {
+      return value;
+    }, function (err) {
+      restore(b);
+      throw err;
+    });
+  }
+
+  /* ---------------- experiment CRUD ---------------- */
+
+  /* data = { id, name, summary, sections, moduleId, meta:{...} } */
+  function addExperiment(data) {
+    var guard = requireAdmin();
+    if (guard) return Promise.reject(guard);
+    data = clone(data);
+
+    return persist(function () {
+      var m = data.meta || {};
+      delete data.meta;
+      if (data.id == null || data.id === '') data.id = nextId();
+      data.id = parseInt(data.id, 10);
+      data.createdAt = Date.now();
+      var moduleId = data.moduleId;
+      delete data.moduleId;
+
+      LAB.experiments = experiments().slice();
+      LAB.experiments.push(data);
+      meta()[data.id] = m;
+      if (moduleId != null && moduleId !== '') assignModule(data.id, moduleId);
+      return data;
+    }, data);
+  }
+
+  function updateExperiment(oldId, data) {
+    var guard = requireAdmin();
+    if (guard) return Promise.reject(guard);
+    data = clone(data);
+
+    return persist(function () {
+      var m = data.meta || {};
+      delete data.meta;
+      data.id = parseInt(data.id, 10);
+      var moduleId = data.moduleId;
+      delete data.moduleId;
+
+      var list = experiments().slice();
+      for (var i = 0; i < list.length; i++) {
+        if (String(list[i].id) === String(oldId)) {
+          var created = list[i].createdAt;
+          var oldKey = list[i].id;
+          if (String(oldKey) !== String(data.id)) {
+            if (meta()[oldKey]) { meta()[data.id] = meta()[oldKey]; delete meta()[oldKey]; }
+            modules().forEach(function (mod) {
+              mod.expIds = (mod.expIds || []).map(function (x) {
+                return String(x) === String(oldId) ? data.id : x;
+              });
+            });
+          }
+          list[i] = data;
+          if (created) list[i].createdAt = created;
+          break;
+        }
+      }
+      LAB.experiments = list;
+      meta()[data.id] = m;
+      if (moduleId != null && moduleId !== '') assignModule(data.id, moduleId);
+      return data;
+    }, data);
+  }
+
+  function deleteExperiment(id) {
+    var guard = requireAdmin();
+    if (guard) return Promise.reject(guard);
+
+    return persist(function () {
+      LAB.experiments = experiments().filter(function (e) { return String(e.id) !== String(id); });
+      if (meta()[id]) delete meta()[id];
+      modules().forEach(function (m) {
+        m.expIds = (m.expIds || []).filter(function (x) { return String(x) !== String(id); });
+      });
+      return true;
+    }, true);
+  }
+
+  /* ---------------- student ID card ---------------- */
+
+  function saveStudent(obj) {
+    var guard = requireAdmin();
+    if (guard) return Promise.reject(guard);
+    obj = clone(obj);
+    return persist(function () {
+      LAB.student = obj;
+      return obj;
+    }, obj);
+  }
+
+  function resetStudent() {
+    var guard = requireAdmin();
+    if (guard) return Promise.reject(guard);
+    return persist(function () {
+      LAB.student = clone(seed.student);
+      return LAB.student;
+    }, LAB.student);
+  }
+
+  function deleteStudent() {
+    var guard = requireAdmin();
+    if (guard) return Promise.reject(guard);
+    return persist(function () {
+      LAB.student = {};
+      return true;
+    }, true);
+  }
+
+  /* ---------------- reset everything ---------------- */
+
+  function resetAll() {
+    var guard = requireAdmin();
+    if (guard) return Promise.reject(guard);
+    return persist(function () {
+      LAB.experiments = clone(seed.experiments);
+      LAB.modules = clone(seed.modules);
+      LAB.meta = clone(seed.meta);
+      return true;
+    }, true);
+  }
+
   return {
+    ready: ready,
     experiments: experiments,
     modules: modules,
     meta: meta,
+    student: student,
     nextId: nextId,
     assignModule: assignModule,
     addExperiment: addExperiment,
     updateExperiment: updateExperiment,
     deleteExperiment: deleteExperiment,
+    saveStudent: saveStudent,
+    resetStudent: resetStudent,
+    deleteStudent: deleteStudent,
     resetAll: resetAll,
     toolCount: toolCount,
     hasSaved: function () { return hasSaved; }

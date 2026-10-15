@@ -142,3 +142,32 @@ assets/data/          datasets the experiment code reads
 modules/              the 5 module PDFs shown on the Modules page (never edited)
 tools/make_videos.py  regenerates every video from data.js
 ```
+## Admin setup (secure edit/delete)
+
+This site is hosted as static files on GitHub Pages. Writes are secured with Firebase
+Authentication + Cloud Firestore, whose security rules run on Google's servers.
+
+1. Create a Firebase project and enable Firestore (production mode) + Email/Password auth.
+2. In the Firebase console, **disable public sign-up** (Authentication -> Settings -> ...
+   or via Firebase CLI) so only the administrator account can exist.
+3. Create one user account for the administrator (Authentication -> Users -> Add user).
+   Note its UID.
+4. Put that UID into `firestore.rules` in place of `REPLACE_WITH_YOUR_ADMIN_UID`, then
+   deploy rules:
+   ```
+   firebase deploy --only firestore:rules
+   ```
+5. In Firebase Console -> Project settings -> Your apps -> Web app, copy the web
+   config into `assets/js/firebase-config.js` (set `window.DS_FIREBASE_CONFIG`).
+6. Commit & push. The website now shows admin controls only after the administrator
+   signs in; all writes are rejected server-side for everyone else.
+
+Until step 5 is completed the site stays read-only (static mode): every visitor
+can view all content, but no management buttons appear.
+
+### Security notes
+
+- No admin password, service account, or privileged key is stored in frontend files.
+- Hiding buttons in the UI is only a convenience; the real enforcement is in
+  `firestore.rules`, which rejects any write from a UID that is not the administrator's.
+- Direct unauthorized write/delete requests therefore return "permission denied".

@@ -15,6 +15,12 @@
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"></noscript>
 
 <link rel="stylesheet" href="assets/css/style.css">
+<style>
+.admin-controls{display:flex;gap:6px;align-items:center;margin-left:8px;flex-wrap:wrap;}
+.admin-btn{cursor:pointer;font:600 12.5px system-ui,sans-serif;padding:7px 13px;border-radius:999px;background:transparent;color:#1b3a2a;border:1px solid rgba(43,106,67,.22);transition:.2s;white-space:nowrap;}
+.admin-btn:hover{background:#f0ebd9;}
+@media (max-width:860px){.admin-controls{order:3;width:100%;justify-content:center;margin:6px 0 0;}.admin-controls .admin-btn{font-size:12px;padding:6px 10px;}}
+</style>
 </head>
 <body>
 
@@ -33,8 +39,17 @@
       <a class="nav-link" data-nav="experiments" href="#/experiments">Experiments</a>
       <a class="nav-link" data-nav="modules" href="#/modules">Modules</a>
       <a class="nav-link" data-nav="tools" href="#/tools">Tools</a>
+      <a class="nav-link" data-nav="resources" href="#/resources">Resources</a>
+      <a class="nav-link" data-nav="projects" href="#/projects">Projects</a>
+      <a class="nav-link" data-nav="profile" href="#/profile">Profile</a>
       <span class="chip chip-subject" id="nav-subject">Subject Code: 22DS102006</span>
     </nav>
+
+    <div class="admin-controls" id="admin-controls">
+      <button id="admin-login-btn" class="admin-btn" type="button">Admin Login</button>
+      <button id="admin-dashboard-btn" class="admin-btn" type="button" hidden>Dashboard</button>
+      <button id="admin-logout-btn" class="admin-btn" type="button" hidden>Logout</button>
+    </div>
 
     <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="topnav">
       <span></span><span></span><span></span>
@@ -56,6 +71,11 @@
 </noscript>
 
 <script src="assets/js/data.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/auth.js"></script>
 <script src="assets/js/store.js"></script>
 <script src="assets/js/runner.js"></script>
 <script src="assets/js/app.js"></script>

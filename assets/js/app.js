@@ -13,6 +13,7 @@
 
   var LAB = window.LAB || null;
   var STORE = window.DS_Store || null;
+  var AUTH = window.DS_Auth || null;
   var PREVIEW_SECONDS = 10;
   var searchQuery = '';
   var suggestIndex = -1;
@@ -20,6 +21,8 @@
   var expModuleFilter = 'all';
   var toolQuery = '';
   var toolCat = 'all';
+  var isAdmin = false;
+  var adminUser = null;
 
   /* ---------------- helpers ---------------- */
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -425,9 +428,9 @@
           '<span class="sec-dots">' + sectionDots(e) + '</span>' +
         '</div>' +
         '<div class="exp-card-actions">' +
-          '<button class="card-btn view" type="button" data-act="view" data-exp="' + esc(e.id) + '"><span class="ci">👁</span> View</button>' +
-          '<button class="card-btn edit" type="button" data-act="edit" data-exp="' + esc(e.id) + '"><span class="ci">✏️</span> Edit</button>' +
-          '<button class="card-btn del" type="button" data-act="delete" data-exp="' + esc(e.id) + '"><span class="ci">🗑</span> Delete</button>' +
+          '<button class="card-btn view" type="button" data-act="view" data-exp="' + esc(e.id) + '" title="View"><span class="ci">👁</span><span class="sr-only">View</span></button>' +
+          (isAdmin ? '<button class="card-btn edit" type="button" data-act="edit" data-exp="' + esc(e.id) + '" title="Edit"><span class="ci">✏️</span><span class="sr-only">Edit</span></button>' : '') +
+          (isAdmin ? '<button class="card-btn del" type="button" data-act="delete" data-exp="' + esc(e.id) + '" title="Delete"><span class="ci">🗑️</span><span class="sr-only">Delete</span></button>' : '') +
         '</div>' +
       '</article>';
   }
@@ -506,10 +509,12 @@
      student ID card — editable in the browser (saved to localStorage)
      assets/js/data.js keeps the default values; "Reset" restores them.
      ============================================================ */
-  var LS_KEY = 'mbu-ds-lab-idcard-v1';
+  var LS_KEY = 'mbu-ds-lab-idcard-v2';
   var ID_FIELDS = [
-    ['name', 'Name:'], ['idNumber', 'ID Number:'], ['section', 'Section:'],
-    ['branch', 'Branch:'], ['faculty', 'Faculty:'], ['profession', 'Profession:']
+    ['name', 'Full Name:'], ['idNumber', 'Student ID Number:'], ['section', 'Section:'],
+    ['faculty', 'Faculty:'], ['profession', 'Designation:'],
+    ['subjectCode', 'Subject Code:'], ['university', 'University Name:'],
+    ['branch', 'Branch:']
   ];
   var idEditing = false;
   var pendingPhoto = null;
@@ -524,12 +529,24 @@
   }
   function clearOverrides() { try { localStorage.removeItem(LS_KEY); } catch (e) {} }
 
+  function isBackendConfigured() {
+    return !!(STORE && AUTH && (typeof AUTH.isConfigured === 'function') && AUTH.isConfigured());
+  }
+
   function studentData() {
     var base = (LAB && LAB.student) || {};
-    var ov = loadOverrides();
     var out = {};
     Object.keys(base).forEach(function (k) { out[k] = base[k]; });
-    Object.keys(ov).forEach(function (k) { out[k] = ov[k]; });
+    /* Browser overrides are only a fallback for static (non-backend) mode.
+       When a backend is configured, the authoritative data lives in LAB.student
+       (loaded from Firestore) so edits stay in sync across devices. */
+    if (!isBackendConfigured()) {
+      var ov = loadOverrides();
+      Object.keys(ov).forEach(function (k) { out[k] = ov[k]; });
+    }
+    var b = (LAB && LAB.brand) || {};
+    if (!out.subjectCode) out.subjectCode = b.subjectCode || 'Subject Code';
+    if (!out.university) out.university = b.university || 'University Name';
     return out;
   }
 
@@ -545,7 +562,8 @@
     var head =
       '<div class="id-head">' +
         '<span class="id-head-txt"><b>' + esc(b.laboratory || 'Data Science Digital Library') + '</b><span>Student ID Card</span></span>' +
-        (idEditing ? '' : '<button class="id-edit-btn" id="id-edit" type="button">Edit</button>') +
+      (idEditing ? '' : (isAdmin ? '<button class="id-edit-btn" id="id-edit" type="button" title="Edit ID Card">✏️<span class="sr-only">Edit ID Card</span></button>' : '')) +
+      (idEditing ? '' : (isAdmin ? '<button class="id-delete-btn" id="id-delete" type="button" title="Delete ID Card">🗑️<span class="sr-only">Delete ID Card</span></button>' : '')) +
       '</div>';
 
     var photoHTML = idEditing
@@ -553,10 +571,10 @@
           '<img src="' + esc(photo) + '" alt="Student photo">' +
           '<span class="photo-overlay">Change photo</span>' +
         '</button>'
-      : '<div class="id-photo">' +
+      : '<a class="id-photo id-photo-link" href="#/profile" aria-label="Open student profile">' +
           '<img src="' + esc(photo) + '" alt="Photo of ' + esc(s.name || 'student') + '" ' +
           'onerror="this.onerror=null;this.src=\'assets/img/student-photo.png\'">' +
-        '</div>';
+        '</a>';
 
     var fields = idEditing
       ? ID_FIELDS.map(function (f) {
@@ -606,6 +624,39 @@
     fitLogos(fresh);
   }
 
+  function confirmDeleteIdCard() {
+    if (!isAdmin) { showToast('Only the administrator can delete the ID card.', 'error'); return; }
+    openModal(
+      '<div class="modal-head"><h2>Delete ID Card</h2>' +
+        '<button class="modal-x" type="button" data-close aria-label="Close">×</button></div>' +
+      '<div class="modal-body"><p class="confirm-text">Are you sure you want to delete the student ID card? ' +
+        'This removes the saved student information and cannot be undone.</p></div>' +
+      '<div class="modal-foot">' +
+        '<button class="btn-cancel" type="button" data-close>Cancel</button>' +
+        '<button class="btn-danger" id="confirm-delete-id" type="button">🗑 Delete</button>' +
+      '</div>'
+    );
+    var btn = $('#confirm-delete-id');
+    if (btn) btn.addEventListener('click', function () {
+      if (!isAdmin) { showToast('Only the administrator can delete the ID card.', 'error'); return; }
+      if (!isBackendConfigured() || !STORE || typeof STORE.deleteStudent !== 'function') {
+        showToast('The editable backend is not configured.', 'error');
+        return;
+      }
+      STORE.deleteStudent().then(function () {
+        try { clearOverrides(); } catch (e) {}
+        idEditing = false;
+        pendingPhoto = null;
+        closeModal();
+        showToast('ID card deleted', 'success');
+        rerender();
+        fillChrome();
+      }).catch(function (err) {
+        showToast((err && err.message) ? err.message : 'Could not delete the ID card.', 'error');
+      });
+    });
+  }
+
   function wireIdCard() {
     var card = document.getElementById('id-card');
     if (!card) return;
@@ -617,14 +668,38 @@
       if (msg) showToast(msg);
     }
     function saveEdit() {
-      var ov = loadOverrides();
+      if (!isAdmin) { showToast('Only the administrator can edit the ID card.', 'error'); return; }
+      var vals = {};
       var missing = false;
       ID_FIELDS.forEach(function (f) {
         var inp = card.querySelector('#f-' + f[0]);
         if (!inp) { missing = true; return; }
-        ov[f[0]] = inp.value.trim();
+        vals[f[0]] = inp.value.trim();
       });
-      if (missing) { showToast('Something went wrong — try again'); return; }
+      if (missing) { showToast('Something went wrong - try again', 'error'); return; }
+      if (!vals.name) { showToast('Full Name is required', 'error'); return; }
+      if (!vals.idNumber) { showToast('Student ID Number is required', 'error'); return; }
+
+      if (isBackendConfigured() && isAdmin) {
+        var base = {};
+        Object.keys((LAB && LAB.student) || {}).forEach(function (k) {
+          base[k] = (LAB.student || {})[k];
+        });
+        Object.keys(vals).forEach(function (k) { base[k] = vals[k]; });
+        if (pendingPhoto) base.photo = pendingPhoto;
+        if (typeof STORE !== 'undefined' && STORE && typeof STORE.saveStudent === 'function') {
+          STORE.saveStudent(base).then(function () {
+            leaveEdit('ID card updated');
+            fillChrome();
+          }).catch(function (err) {
+            showToast((err && err.message) ? err.message : 'Could not save the ID card.', 'error');
+          });
+          return;
+        }
+      }
+
+      var ov = loadOverrides();
+      Object.keys(vals).forEach(function (k) { ov[k] = vals[k]; });
       if (pendingPhoto) ov.photo = pendingPhoto;
       if (!saveOverrides(ov)) return;
       leaveEdit('ID card updated');
@@ -632,7 +707,16 @@
     }
 
     var edit = card.querySelector('#id-edit');
-    if (edit) edit.addEventListener('click', enterEdit);
+    if (edit) edit.addEventListener('click', function () {
+      if (!isAdmin) { showToast('Only the administrator can edit the ID card.', 'error'); return; }
+      enterEdit();
+    });
+
+    var del = card.querySelector('#id-delete');
+    if (del) del.addEventListener('click', function () {
+      if (!isAdmin) { showToast('Only the administrator can delete the ID card.', 'error'); return; }
+      confirmDeleteIdCard();
+    });
 
     var cancel = card.querySelector('#id-cancel');
     if (cancel) cancel.addEventListener('click', function () { leaveEdit(); });
@@ -642,8 +726,19 @@
 
     var reset = card.querySelector('#id-reset');
     if (reset) reset.addEventListener('click', function () {
+      if (!isAdmin) { showToast('Only the administrator can reset the ID card.', 'error'); return; }
+      if (isBackendConfigured() && isAdmin && STORE && typeof STORE.resetStudent === 'function') {
+        STORE.resetStudent().then(function () {
+          clearOverrides();
+          leaveEdit('ID card reset to default values');
+          fillChrome();
+        }).catch(function (err) {
+          showToast((err && err.message) ? err.message : 'Could not reset.', 'error');
+        });
+        return;
+      }
       clearOverrides();
-      leaveEdit('ID card reset to data.js values');
+      leaveEdit('ID card reset to default values');
       fillChrome();
     });
 
@@ -670,6 +765,178 @@
         else if (ev.key === 'Escape') { ev.preventDefault(); leaveEdit(); }
       });
     });
+  }
+
+  /* ============================================================
+     PROFILE -- student profile and ID card
+     ============================================================ */
+  function profileView() {
+    var s = studentData();
+    var b = (LAB && LAB.brand) || {};
+    var photo = s.photo || 'assets/img/student-photo.png';
+    return '<section class="page">' +
+      crumb([{ label: 'Home', href: '#/' }, { label: 'Profile' }]) +
+      '<div class="page-head profile-head">' +
+        '<div class="profile-photo-wrap">' +
+          '<span class="profile-photo-ring"></span>' +
+          '<img class="profile-photo" src="' + esc(photo) + '" alt="Photo of ' + esc(s.name || 'student') + '" ' +
+            'onerror="this.onerror=null;this.src=\'assets/img/student-photo.png\'">' +
+        '</div>' +
+        '<div class="profile-head-txt">' +
+          '<h1>' + esc(s.name || 'Student') + '</h1>' +
+          '<p class="profile-sub">' + esc(s.profession || s.branch || 'Student') + '</p>' +
+          '<p class="muted">' + esc(b.laboratory || 'Data Science Digital Library') + ' -- ' + esc(b.subjectCode || '') + '</p>' +
+        '</div>' +
+      '</div>' +
+      idCardHTML() +
+      '<div class="det-actions"><a class="back-link big" href="#/">Back to Home</a></div>' +
+    '</section>';
+  }
+
+  function wireProfile() { wireIdCard(); }
+
+  /* ============================================================
+     RESOURCES
+     ============================================================ */
+  function resourceItems() {
+    var out = [];
+    allMaterials().forEach(function (m) {
+      out.push({
+        title: m.title,
+        description: m.description || ('Module study material with ' + (m.pages || '?') + ' pages.'),
+        category: 'Study Notes',
+        kind: 'view',
+        href: '#/material/' + m.id,
+        button: 'View'
+      });
+    });
+    out.push({
+      title: 'Car Dataset (40 x 20)',
+      description: 'Sample CSV dataset used across the experiments.',
+      category: 'Datasets',
+      kind: 'download',
+      href: 'assets/data/car_dataset_40x20.csv',
+      button: 'Download'
+    });
+    allToolCategories().forEach(function (cat) {
+      (cat.items || []).forEach(function (t) {
+        if (t.url) {
+          out.push({
+            title: t.name + ' Documentation',
+            description: t.explanation || ('Official documentation for ' + t.name + '.'),
+            category: 'Documentation',
+            kind: 'open',
+            href: t.url,
+            button: 'Open'
+          });
+        }
+      });
+    });
+    return out;
+  }
+
+  function resourcesView() {
+    var items = resourceItems();
+    var cats = [];
+    var seen = {};
+    items.forEach(function (r) {
+      if (!seen[r.category]) { seen[r.category] = true; cats.push(r.category); }
+    });
+    var blocks = cats.map(function (cat) {
+      var list = items.filter(function (r) { return r.category === cat; });
+      return '<div class="section-head"><div><h2>' + esc(cat) + '</h2>' +
+        '<p class="section-sub">' + list.length + ' resource' + (list.length === 1 ? '' : 's') + '</p></div></div>' +
+        '<div class="resource-grid">' + list.map(function (r) {
+          return '<article class="resource-card">' +
+            '<span class="resource-cat">' + esc(r.category) + '</span>' +
+            '<h3 class="resource-title">' + esc(r.title) + '</h3>' +
+            '<p class="resource-desc">' + esc(r.description) + '</p>' +
+            '<a class="resource-btn" href="' + esc(r.href) + '" ' +
+              (r.kind === 'download' ? 'download ' : '') +
+              (r.kind === 'open' || r.kind === 'download' ? 'target="_blank" rel="noopener" ' : '') +
+              '>' + esc(r.button) + '</a>' +
+          '</article>';
+        }).join('') + '</div>';
+    }).join('');
+
+    return '<section class="page">' +
+      crumb([{ label: 'Home', href: '#/' }, { label: 'Resources' }]) +
+      '<div class="page-head">' +
+        '<h1>Resources</h1>' +
+        '<p>Study materials, notes, datasets and reference documentation used throughout the library.</p>' +
+      '</div>' +
+      (items.length ? blocks : '<div class="empty-state">No resources available yet.</div>') +
+    '</section>';
+  }
+
+  /* ============================================================
+     PROJECTS
+     ============================================================ */
+  function projectTech(exp) {
+    var m = metaOf(exp);
+    if (m && Array.isArray(m.tools) && m.tools.length) return m.tools.slice();
+    return [];
+  }
+
+  function projectLinks(exp) {
+    var links = [];
+    if (exp.githubLink) links.push({ label: 'View Project', href: exp.githubLink, external: true });
+    if (exp.youtubeLink) links.push({ label: 'YouTube', href: exp.youtubeLink, external: true });
+    if (exp.youtubeVideo) links.push({ label: 'Watch', href: 'https://www.youtube.com/watch?v=' + exp.youtubeVideo, external: true });
+    if (!links.length) links.push({ label: 'View Project', href: '#/experiment/' + exp.id, external: false });
+    return links;
+  }
+
+  function projectCardHTML(exp) {
+    var m = moduleOfExperiment(exp);
+    var techs = projectTech(exp);
+    var techHTML = techs.length
+      ? '<div class="project-tech">' + techs.map(function (name) {
+          var t = toolByName(name);
+          return '<span class="tech-chip">' +
+            (t && t.icon ? '<span class="tc-icon">' + esc(t.icon) + '</span>' : '') +
+            esc(name) + '</span>';
+        }).join('') + '</div>'
+      : '';
+    var links = projectLinks(exp);
+    var primary = links[0];
+    var extra = links.slice(1).map(function (l) {
+      return '<a class="project-link" href="' + esc(l.href) + '"' +
+        (l.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + esc(l.label) + '</a>';
+    }).join('');
+    var modLabel = (m && m.id != null && m.id !== '—') ? ('Module ' + esc(m.id)) : '';
+    var preview = exp.previewVideo
+      ? '<video class="project-thumb" src="' + esc(exp.previewVideo) + '" muted playsinline preload="metadata" aria-hidden="true"></video>'
+      : '<span class="project-icon">📦</span>';
+    return '<article class="project-card">' +
+      '<div class="project-media">' + preview + '</div>' +
+      '<div class="project-body">' +
+        '<span class="project-cat">' + (modLabel ? esc(modLabel) : 'Project') + '</span>' +
+        '<h3 class="project-title">' + esc(exp.name) + '</h3>' +
+        '<p class="project-desc">' + esc(exp.summary || 'Data science project from the Digital Library.') + '</p>' +
+        techHTML +
+        '<div class="project-actions">' +
+          '<a class="project-btn" href="' + esc(primary.href) + '"' +
+            (primary.external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>View Project →</a>' +
+          extra +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  function projectsView() {
+    var list = allExperiments().slice();
+    var cards = list.length
+      ? '<div class="project-grid">' + list.map(projectCardHTML).join('') + '</div>'
+      : '<div class="empty-state">No projects yet. Experiments you add will appear here as project cards.</div>';
+    return '<section class="page">' +
+      crumb([{ label: 'Home', href: '#/' }, { label: 'Projects' }]) +
+      '<div class="page-head">' +
+        '<h1>Projects</h1>' +
+        '<p>Data science and programming projects from the Digital Library, with their technology stacks.</p>' +
+      '</div>' +
+      cards +
+    '</section>';
   }
 
   /* ============================================================
@@ -730,11 +997,29 @@
         statCard('Tools &amp; Libraries', toolTotal(), '#/tools', '🧰') +
       '</div>' +
 
+      '<div class="home-hub">' +
+        '<a class="home-hub-card" href="#/resources">' +
+          '<span class="hub-icon">📚</span>' +
+          '<span class="hub-title">Resources</span>' +
+          '<span class="hub-desc">Study materials, notes, PDFs and reference links.</span>' +
+        '</a>' +
+        '<a class="home-hub-card" href="#/projects">' +
+          '<span class="hub-icon">🗂️</span>' +
+          '<span class="hub-title">Projects</span>' +
+          '<span class="hub-desc">Data science and programming projects in cards.</span>' +
+        '</a>' +
+        '<a class="home-hub-card hub-profile" href="#/profile">' +
+          '<img class="hub-photo" src="' + esc(studentData().photo || 'assets/img/student-photo.png') + '" alt="Profile photo">' +
+          '<span class="hub-title">' + esc(studentData().name || 'Profile') + '</span>' +
+          '<span class="hub-desc">View student ID card and academic details.</span>' +
+        '</a>' +
+      '</div>' +
+
       '<div class="quick-links">' +
         '<a class="quick-link" href="#/experiments">🔬 <span>Browse Experiments</span></a>' +
         '<a class="quick-link" href="#/modules">📚 <span>View Modules</span></a>' +
         '<a class="quick-link" href="#/tools">🧰 <span>Explore Tools</span></a>' +
-        '<button class="quick-link" type="button" id="quick-add">➕ <span>Add Experiment</span></button>' +
+        (isAdmin ? '<button class="quick-link" type="button" id="quick-add">+ <span>Add Experiment</span></button>' : '') +
       '</div>' +
 
       listBlock +
@@ -908,7 +1193,7 @@
           '<h1>Experiments</h1>' +
           '<p>All experiments in the library. Add, edit or delete them — your changes are saved in this browser.</p>' +
         '</div>' +
-        '<button class="btn-add" id="add-experiment" type="button"><span class="plus">＋</span> Add Experiment</button>' +
+        (isAdmin ? '<button class="btn-add" id="add-experiment" type="button"><span class="plus">+</span> Add Experiment</button>' : '') +
       '</div>' +
       '<div class="exp-toolbar">' +
         '<div class="search-box compact">' +
@@ -922,7 +1207,7 @@
       '</div>' +
       '<p class="exp-count" id="exp-count"></p>' +
       '<div class="exp-grid" id="exp-grid"></div>' +
-      '<div class="exp-foot"><button class="btn-reset big" id="reset-data" type="button">↺ Reset all experiments to defaults</button></div>' +
+      (isAdmin ? '<div class="exp-foot"><button class="btn-reset big" id="reset-data" type="button">R Reset all experiments to defaults</button></div>' : '') +
     '</section>';
   }
 
@@ -1037,8 +1322,8 @@
       '<div class="det-actions">' +
         '<a class="back-link big" href="#/experiments">← Back to Experiments</a>' +
         '<a class="back-link big" href="#/module/' + esc(m.id) + '">View Module ' + esc(m.id) + ' →</a>' +
-        '<button class="btn-add" type="button" data-act="edit" data-exp="' + esc(exp.id) + '">✏️ Edit Experiment</button>' +
-        '<button class="btn-danger big" type="button" data-act="delete" data-exp="' + esc(exp.id) + '">🗑 Delete</button>' +
+        (isAdmin ? '<button class="btn-add" type="button" data-act="edit" data-exp="' + esc(exp.id) + '">Edit Experiment</button>' : '') +
+        (isAdmin ? '<button class="btn-danger big" type="button" data-act="delete" data-exp="' + esc(exp.id) + '">Delete</button>' : '') +
       '</div>' +
     '</section>';
   }
@@ -1478,6 +1763,7 @@
   }
 
   function openExperimentForm(id) {
+    if (!isAdmin) { showToast('Only the administrator can manage content.', 'error'); return; }
     var exp = (id != null) ? getExperiment(id) : null;
     if (id != null && !exp) return;
     openModal(expFormHTML(exp));
@@ -1545,21 +1831,31 @@
         });
       }
 
-      var ok;
+      var savePromise;
       try {
-        ok = exp ? STORE.updateExperiment(exp.id, payload) : STORE.addExperiment(payload);
-      } catch (e) { ok = false; }
-      if (!ok) return fail('Could not save — your browser storage may be full.');
-
-      closeModal();
-      showToast(exp ? 'Experiment updated' : 'Experiment added', 'success');
-      rerender();
+        savePromise = exp ? STORE.updateExperiment(exp.id, payload) : STORE.addExperiment(payload);
+      } catch (e) {
+        return fail((e && e.message) ? e.message : 'Could not save.');
+      }
+      if (!savePromise || typeof savePromise.then !== 'function') {
+        return fail('Could not save - the editable backend is not available.');
+      }
+      savePromise.then(function () {
+        closeModal();
+        showToast(exp ? 'Experiment updated' : 'Experiment added', 'success');
+        rerender();
+      }).catch(function (err) {
+        fail((err && err.message) ? err.message : 'Could not save.');
+      });
       return true;
     });
   }
 
   function handleExpAction(act, id) {
     if (act === 'view') { location.hash = '#/experiment/' + id; return; }
+    if (act === 'edit' || act === 'delete') {
+      if (!isAdmin) { showToast('Only the administrator can manage content.', 'error'); return; }
+    }
     if (act === 'edit') { openExperimentForm(id); return; }
     if (act === 'delete') { confirmDeleteExperiment(id); }
   }
@@ -1579,11 +1875,16 @@
     );
     var btn = $('#confirm-delete');
     if (btn) btn.addEventListener('click', function () {
-      STORE.deleteExperiment(id);
-      closeModal();
-      showToast('Experiment deleted', 'success');
-      if (location.hash.indexOf('#/experiment/' + id) === 0) location.hash = '#/experiments';
-      else rerender();
+      if (!isAdmin) { showToast('Only the administrator can delete content.', 'error'); return; }
+      if (!STORE) { showToast('The editable backend is not configured.', 'error'); return; }
+      STORE.deleteExperiment(id).then(function () {
+        closeModal();
+        showToast('Experiment deleted', 'success');
+        if (location.hash.indexOf('#/experiment/' + id) === 0) location.hash = '#/experiments';
+        else rerender();
+      }).catch(function (err) {
+        showToast((err && err.message) ? err.message : 'Could not delete.', 'error');
+      });
     });
   }
 
@@ -1622,11 +1923,17 @@
     );
     var b = $('#confirm-reset');
     if (b) b.addEventListener('click', function () {
-      if (STORE) STORE.resetAll();
-      expSearch = ''; expModuleFilter = 'all';
-      closeModal();
-      showToast('Restored the default experiments', 'success');
-      rerender();
+      if (!isAdmin) { showToast('Only the administrator can reset content.', 'error'); return; }
+      if (STORE) {
+        STORE.resetAll().then(function () {
+          expSearch = ''; expModuleFilter = 'all';
+          closeModal();
+          showToast('Restored the default experiments', 'success');
+          rerender();
+        }).catch(function (err) {
+          showToast((err && err.message) ? err.message : 'Could not reset.', 'error');
+        });
+      }
     });
   }
 
@@ -1734,6 +2041,15 @@
       var hl = parts[1] || '';
       html = toolsView(); wire = function () { wireTools(hl); };
       nav = 'tools'; title = 'Tools & Libraries';
+    } else if (parts[0] === 'resources') {
+      html = resourcesView(); wire = null;
+      nav = 'resources'; title = 'Resources';
+    } else if (parts[0] === 'projects') {
+      html = projectsView(); wire = null;
+      nav = 'projects'; title = 'Projects';
+    } else if (parts[0] === 'profile') {
+      html = profileView(); wire = wireProfile;
+      nav = 'profile'; title = 'Profile';
     } else {
       html = notFound();
     }
@@ -1804,8 +2120,156 @@
     if (window.innerWidth > 860) closeMenu();
   });
 
-  fillChrome();
-  fitLogos(document);
-  window.addEventListener('hashchange', route);
-  route();
+  /* ---------------- admin UI helpers ---------------- */
+  function updateAdminControls() {
+    var loginBtn = $('#admin-login-btn');
+    var dashBtn = $('#admin-dashboard-btn');
+    var logoutBtn = $('#admin-logout-btn');
+    if (loginBtn) loginBtn.hidden = !!isAdmin;
+    if (dashBtn) dashBtn.hidden = !isAdmin;
+    if (logoutBtn) logoutBtn.hidden = !isAdmin;
+  }
+
+  function wireAdminButtons() {
+    var loginBtn = $('#admin-login-btn');
+    if (loginBtn) loginBtn.addEventListener('click', openLoginModal);
+    var dashBtn = $('#admin-dashboard-btn');
+    if (dashBtn) dashBtn.addEventListener('click', openAdminDashboard);
+    var logoutBtn = $('#admin-logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', function () {
+      if (AUTH) {
+        AUTH.signOut().then(function () {
+          showToast('Signed out.', 'success');
+        }).catch(function (err) {
+          showToast((err && err.message) ? err.message : 'Could not sign out.', 'error');
+        });
+      }
+    });
+  }
+
+  function openLoginModal() {
+    if (!AUTH || !AUTH.isConfigured()) {
+      openModal(
+        '<div class="modal-head"><h2>Admin Login</h2>' +
+          '<button class="modal-x" type="button" data-close aria-label="Close">x</button></div>' +
+        '<div class="modal-body"><p class="confirm-text">Firebase is not configured yet. ' +
+          'Admin login is disabled until you add your Firebase web config to ' +
+          'assets/js/firebase-config.js and deploy the Firestore security rules.</p>' +
+          '<p class="form-note">See the Admin setup section of README.md for the exact steps.</p></div>' +
+        '<div class="modal-foot"><button class="btn-cancel" type="button" data-close>Close</button></div>'
+      );
+      return;
+    }
+    openModal(
+      '<form id="admin-login-form" novalidate>' +
+        '<div class="modal-head"><h2>Admin Login</h2>' +
+          '<button class="modal-x" type="button" data-close aria-label="Close">x</button></div>' +
+        '<div class="modal-body">' +
+          '<div class="form-field">' +
+            '<label for="admin-email">Email</label>' +
+            '<input class="form-input" id="admin-email" name="email" type="email" autocomplete="username" required>' +
+          '</div>' +
+          '<div class="form-field">' +
+            '<label for="admin-password">Password</label>' +
+            '<input class="form-input" id="admin-password" name="password" type="password" autocomplete="current-password" required>' +
+          '</div>' +
+          '<p class="form-error" id="admin-login-error" hidden></p>' +
+        '</div>' +
+        '<div class="modal-foot">' +
+          '<button class="btn-cancel" type="button" data-close>Cancel</button>' +
+          '<button class="btn-save" type="submit">Sign In</button>' +
+        '</div>' +
+      '</form>'
+    );
+    wireLoginForm();
+  }
+
+  function wireLoginForm() {
+    var form = $('#admin-login-form');
+    if (!form) return;
+    var err = $('#admin-login-error');
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var email = (form.querySelector('#admin-email') || {}).value || '';
+      var password = (form.querySelector('#admin-password') || {}).value || '';
+      if (err) err.hidden = true;
+      AUTH.signIn(email, password).then(function () {
+        closeModal();
+        showToast('Welcome, administrator.', 'success');
+        openAdminDashboard();
+      }).catch(function (e) {
+        if (err) {
+          err.textContent = (e && e.message) ? e.message : 'Sign-in failed.';
+          err.hidden = false;
+        }
+      });
+    });
+  }
+
+  function openAdminDashboard() {
+    if (!isAdmin) { showToast('Administrator sign-in required.', 'error'); return; }
+    var expCount = allExperiments().length;
+    var modCount = allModules().length;
+    var toolCount = (STORE && typeof STORE.toolCount === 'function') ? STORE.toolCount() : 0;
+    openModal(
+      '<div class="modal-head"><h2>Admin Dashboard</h2>' +
+        '<button class="modal-x" type="button" data-close aria-label="Close">x</button></div>' +
+      '<div class="modal-body">' +
+        '<div class="stat-row">' +
+          '<div class="card stat-card"><div class="stat-num">' + expCount + '</div><div class="stat-label">Experiments</div></div>' +
+          '<div class="card stat-card"><div class="stat-num">' + modCount + '</div><div class="stat-label">Modules</div></div>' +
+          '<div class="card stat-card"><div class="stat-num">' + toolCount + '</div><div class="stat-label">Tools</div></div>' +
+        '</div>' +
+        '<p class="confirm-text">Signed in as ' + esc((AUTH.email && AUTH.email()) || '') + '</p>' +
+        '<p class="form-note">Use the Add / Edit / Delete buttons throughout the site to manage content. Changes are saved to Firestore and visible to everyone.</p>' +
+      '</div>' +
+      '<div class="modal-foot">' +
+        '<button class="btn-reset" type="button" id="dash-reset">Reset All</button>' +
+        '<button class="btn-cancel" type="button" id="dash-add">Add Experiment</button>' +
+        '<button class="btn-danger" type="button" id="dash-logout">Logout</button>' +
+      '</div>'
+    );
+    var add = $('#dash-add');
+    if (add) add.addEventListener('click', function () { closeModal(); openExperimentForm(null); });
+    var reset = $('#dash-reset');
+    if (reset) reset.addEventListener('click', function () { closeModal(); confirmResetData(); });
+    var logout = $('#dash-logout');
+    if (logout) logout.addEventListener('click', function () {
+      if (AUTH) AUTH.signOut();
+      closeModal();
+    });
+  }
+
+  /* ---------------- boot ---------------- */
+  var AUTH_READY = false;
+  var STORE_READY = false;
+  function startBoot() {
+    if (!AUTH_READY || !STORE_READY) return;
+    updateAdminControls();
+    wireAdminButtons();
+    fillChrome();
+    fitLogos(document);
+    window.addEventListener('hashchange', route);
+    route();
+  }
+
+  if (AUTH) {
+    AUTH.init();
+    AUTH.onChange(function (admin) {
+      isAdmin = !!admin;
+      adminUser = (AUTH.user && AUTH.user()) ? AUTH.user() : null;
+      updateAdminControls();
+      try { route(); } catch (e) { }
+    });
+    AUTH.onReady(function () { AUTH_READY = true; startBoot(); });
+  } else {
+    AUTH_READY = true;
+  }
+
+  if (STORE) {
+    STORE.ready(function () { STORE_READY = true; startBoot(); });
+  } else {
+    STORE_READY = true;
+    startBoot();
+  }
 })();
