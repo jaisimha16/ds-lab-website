@@ -6,7 +6,7 @@ video and syntax-highlighted code.
 
 ## Open it
 
-**Live:** https://jaisimha16.github.io/friends-website/
+**Live:** https://jaisimha16.github.io/ds-lab-website/
 
 Or run it locally (a server is needed for the Copy-Code button — don't just
 double-click `index.html`):
