@@ -1589,28 +1589,44 @@ a:hover{color:var(--b10-green-bright)}
   .resource-grid,.project-grid{grid-template-columns:1fr}
 }
 
-/* Existing admin controls: Dashboard / Admin / Logout lighting */
-.admin-btn{
-  color:#d9ffe6;
-  border:1px solid rgba(163,255,18,.45);
-  background:linear-gradient(135deg,rgba(163,255,18,.10),rgba(163,255,18,.04));
+/* Existing admin controls: one shared neon glow container */
+.admin-control-group{
+  display:inline-flex;
+  align-items:center;
+  overflow:hidden;
+  border:1px solid rgba(163,255,18,.55);
+  border-radius:999px;
+  background:linear-gradient(135deg,rgba(163,255,18,.08),rgba(163,255,18,.03));
   box-shadow:0 0 12px rgba(163,255,18,.24),0 0 26px rgba(163,255,18,.10);
   animation:admin-neon-breathe 2.4s ease-in-out infinite;
 }
-.admin-btn:hover{
+.admin-control-group .admin-btn{
+  color:#d9ffe6;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  border-radius:0;
+  padding:7px 13px;
+}
+.admin-control-group .admin-btn + .admin-btn{
+  border-left:1px solid rgba(163,255,18,.28);
+}
+.admin-control-group .admin-btn:hover{
   color:#f2fff6;
-  border-color:rgba(163,255,18,.75);
-  box-shadow:0 0 16px rgba(163,255,18,.42),0 0 34px rgba(163,255,18,.18);
+  background:rgba(163,255,18,.12);
 }
-.admin-btn:focus-visible{
+.admin-control-group .admin-btn:focus-visible{
   outline:2px solid #A3FF12;
-  outline-offset:2px;
+  outline-offset:-3px;
 }
-.admin-btn svg{stroke:#A3FF12;filter:drop-shadow(0 0 6px rgba(163,255,18,.55))}
+.admin-control-group .admin-btn svg{
+  stroke:#A3FF12;
+  filter:drop-shadow(0 0 6px rgba(163,255,18,.55));
+}
 @keyframes admin-neon-breathe{
   0%,100%{box-shadow:0 0 10px rgba(163,255,18,.22),0 0 24px rgba(163,255,18,.1)}
   50%{box-shadow:0 0 16px rgba(163,255,18,.42),0 0 34px rgba(163,255,18,.18)}
 }
 @media (prefers-reduced-motion:reduce){
-  .admin-btn{animation:none}
+  .admin-control-group{animation:none}
 }
