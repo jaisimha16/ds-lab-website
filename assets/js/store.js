@@ -71,6 +71,16 @@ window.DS_Store = (function () {
     if (Array.isArray(data.modules)) LAB.modules = data.modules;
     if (data.meta && typeof data.meta === 'object') LAB.meta = data.meta;
     if (data.student && typeof data.student === 'object') LAB.student = data.student;
+    // Preserve remote/user data and add shipped experiments that are missing.
+    (seed.experiments || []).forEach(function (se) {
+      var exists = (LAB.experiments || []).some(function (e) { return String(e.id) === String(se.id); });
+      if (!exists) LAB.experiments.push(JSON.parse(JSON.stringify(se)));
+    });
+    if (seed.meta) {
+      Object.keys(seed.meta).forEach(function (k) {
+        if (!LAB.meta[k]) LAB.meta[k] = JSON.parse(JSON.stringify(seed.meta[k]));
+      });
+    }
     if (Array.isArray(data.experiments) || Array.isArray(data.modules)) hasSaved = true;
   }
 

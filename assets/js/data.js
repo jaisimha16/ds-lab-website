@@ -224,7 +224,118 @@ var LAB = {
       ]
     }
 
-  ],
+,
+    {
+      "id": 6,
+      "name": "Time Series Analysis with Pandas",
+      "previewVideo": null,
+      "youtubeVideo": null,
+      "youtubeLink": null,
+      "githubLink": "https://github.com/jaisimha16",
+      "summary": "Creates a time series from datetime objects, generates a DatetimeIndex with date_range, localizes and converts timezones, performs period arithmetic and frequency conversion, converts Series and DataFrames to periods, and resamples, downsamples and upsamples time series.",
+      "sections": [
+        {
+          "letter": "A",
+          "title": "Create a time series from datetime objects",
+          "video": null,
+          "code": "import pandas as pd\n\n# Create datetime objects\ndates = pd.to_datetime([\n    '2026-01-01',\n    '2026-01-02',\n    '2026-01-03',\n    '2026-01-04',\n    '2026-01-05'\n])\n\n# Create data\ntemperature = [28, 30, 29, 31, 32]\n\n# Create time series with timestamps as index\ntime_series = pd.Series(\n    temperature,\n    index=dates\n)\n\n# Display the time series\nprint(\"Time Series:\")\nprint(time_series)"
+        },
+        {
+          "letter": "B",
+          "title": "Generate a DatetimeIndex with date_range",
+          "video": null,
+          "code": "import pandas as pd\n\n# Generate a DatetimeIndex with 7 dates\ndate_index = pd.date_range(\n    start='2026-01-01',\n    periods=7,\n    freq='D'\n)\n\n# Display the DatetimeIndex\nprint(\"Generated DatetimeIndex:\")\nprint(date_index)"
+        },
+        {
+          "letter": "C",
+          "title": "Timezone localization and conversion",
+          "video": null,
+          "code": "import pandas as pd\n\n--------------------------------------------------\n1. Generate date range by setting a time zone\n--------------------------------------------------\n\nindia_dates = pd.date_range(\n    start='2026-01-01 09:00',\n    periods=3,\n    freq='h',\n    tz='Asia/Kolkata'\n)\n\nprint(\"1. Date Range with Asia/Kolkata Time Zone:\")\nprint(india_dates)\n\n\n--------------------------------------------------\n2. Create a timezone-naive DatetimeIndex\n--------------------------------------------------\n\ndates = pd.date_range(\n    start='2026-01-01 09:00',\n    periods=3,\n    freq='h'\n)\n\nprint(\"\\n2. Timezone-naive Date Range:\")\nprint(dates)\n\n\n--------------------------------------------------\n3. Localize the timezone\n--------------------------------------------------\n\nlocalized_dates = dates.tz_localize('Asia/Kolkata')\n\nprint(\"\\n3. After Localizing to Asia/Kolkata:\")\nprint(localized_dates)\n\n\n--------------------------------------------------\n4. Convert to another timezone using tz_convert()\n--------------------------------------------------\n\nnew_york_dates = localized_dates.tz_convert(\n    'America/New_York'\n)\n\nprint(\"\\n4. Converted to America/New_York:\")\nprint(new_york_dates)\n\n\n-------------------------------------------------\n5. Create another time series in a different\n   timezone\n--------------------------------------------------\n\nindia_series = pd.Series(\n    [100, 200, 300],\n    index=localized_dates\n)\n\nnew_york_series = pd.Series(\n    [400, 500, 600],\n    index=new_york_dates\n)\n\nprint(\"\\n5. India Time Series:\")\nprint(india_series)\n\nprint(\"\\nNew York Time Series:\")\nprint(new_york_series)\n\n\n--------------------------------------------------\n6. Combine two different timezone series\n--------------------------------------------------\n\ncombined_series = pd.concat([\n    india_series,\n    new_york_series\n])\n\nprint(\"\\n6. Combined Time Series:\")\nprint(combined_series)\n\nSample Output\n1. Date Range with Time Zone\n1. Date Range with Asia/Kolkata Time Zone:\n\nDatetimeIndex(['2026-01-01 09:00:00+05:30',\n               '2026-01-01 10:00:00+05:30',\n               '2026-01-01 11:00:00+05:30'],\n              dtype='datetime64[ns, Asia/Kolkata]', freq='h')\n2. Timezone-Naive Date Range\n2. Timezone-naive Date Range:\n\nDatetimeIndex(['2026-01-01 09:00:00',\n               '2026-01-01 10:00:00',\n               '2026-01-01 11:00:00'],\n              dtype='datetime64[ns]', freq='h')\n3. Localized Time Zone\n3. After Localizing to Asia/Kolkata:\n\nDatetimeIndex(['2026-01-01 09:00:00+05:30',\n               '2026-01-01 10:00:00+05:30',\n               '2026-01-01 11:00:00+05:30'],\n              dtype='datetime64[ns, Asia/Kolkata]', freq='h')\n4. Converted to New York Time\n4. Converted to America/New_York:\n\nDatetimeIndex(['2025-12-31 22:30:00-05:00',\n               '2025-12-31 23:30:00-05:00',\n               '2026-01-01 00:30:00-05:00'],\n              dtype='datetime64[ns, America/New_York]', freq='h')\n5. Time Series\n5. India Time Series:\n\n2026-01-01 09:00:00+05:30    100\n2026-01-01 10:00:00+05:30    200\n2026-01-01 11:00:00+05:30    300\ndtype: int64\nNew York Time Series:\n\n2025-12-31 22:30:00-05:00    400\n2025-12-31 23:30:00-05:00    500\n2026-01-01 00:30:00-05:00    600\ndtype: int64\n6. Combined Time Series\n6. Combined Time Series:\n\n2025-12-31 22:30:00-05:00    400\n2025-12-31 23:30:00-05:00    500\n2026-01-01 00:30:00-05:00    600\n2026-01-01 09:00:00+05:30    100\n2026-01-01 10:00:00+05:30    200\n2026-01-01 11:00:00+05:30    300\ndtype: int64\n\n\n\n\tPerform period arithmetic such as adding and subtracting integers from periods and construct range of periods using period_range function."
+        },
+        {
+          "letter": "D",
+          "title": "Period arithmetic and period_range",
+          "video": null,
+          "code": "import pandas as pd\n\n# Create a monthly Period\np = pd.Period('2026-01', freq='M')\n\nprint(\"Original Period:\")\nprint(p)\n\n# Add integers to the period\nprint(\"\\nAfter adding 2:\")\nprint(p + 2)\n\nprint(\"\\nAfter adding 5:\")\nprint(p + 5)\n\n# Subtract integers from the period\nprint(\"\\nAfter subtracting 1:\")\nprint(p - 1)\n\nprint(\"\\nAfter subtracting 3:\")\nprint(p - 3)\n\n# Create a range of monthly periods\nperiods = pd.period_range(\n    start='2026-01',\n    periods=6,\n    freq='M'\n)\n\nprint(\"\\nRange of Periods:\")\nprint(periods)\nSample Output\nOriginal Period:\n2026-01\n\nAfter adding 2:\n2026-03\n\nAfter adding 5:\n2026-06\n\nAfter subtracting 1:\n2025-12\n\nAfter subtracting 3:\n2025-10\n\nRange of Periods:\nPeriodIndex(['2026-01', '2026-02', '2026-03',\n             '2026-04', '2026-05', '2026-06'],\n            dtype='period[M]')\n\n\t\nConvert Periods and Periodlndex objects to another frequency with asfreq method."
+        },
+        {
+          "letter": "E",
+          "title": "Convert period frequencies with asfreq",
+          "video": null,
+          "code": "import pandas as pd\n\n--------------------------------------------------\n1. Create a monthly Period\n---------------------------------------------------\n\np = pd.Period('2026-01', freq='M')\n\nprint(\"Original Period:\")\nprint(p)\n\n\n---------------------------------------------------\n2. Convert monthly Period to daily frequency\n---------------------------------------------------\n\ndaily_start = p.asfreq('D', how='start')\n\nprint(\"\\nMonthly Period converted to Daily (Start):\")\nprint(daily_start)\n\n\ndaily_end = p.asfreq('D', how='end')\n\nprint(\"\\nMonthly Period converted to Daily (End):\")\nprint(daily_end)\n\n\n---------------------------------------------------\n 3. Create a PeriodIndex\n ---------------------------------------------------\n\nperiod_index = pd.period_range(\n    start='2026-01',\n    periods=3,\n    freq='M'\n)\n\nprint(\"\\nOriginal PeriodIndex:\")\nprint(period_index)\n\n\n ---------------------------------------------------\n 4. Convert PeriodIndex to daily frequency\n ---------------------------------------------------\n\ndaily_period_index = period_index.asfreq(\n    'D',\n    how='start'\n)\n\nprint(\"\\nPeriodIndex converted to Daily Frequency:\")\nprint(daily_period_index)\n\n\n ---------------------------------------------------\n 5. Convert PeriodIndex to daily frequency at end\n ---------------------------------------------------\n\ndaily_period_index_end = period_index.asfreq(\n    'D',\n    how='end'\n)\n\nprint(\"\\nPeriodIndex converted to Daily Frequency (End):\")\nprint(daily_period_index_end)\n\nSample Output\nOriginal Period:\n2026-01\n\nMonthly Period converted to Daily (Start):\n2026-01-01\n\nMonthly Period converted to Daily (End):\n2026-01-31\n\nOriginal PeriodIndex:\nPeriodIndex(['2026-01', '2026-02', '2026-03'],\n            dtype='period[M]')\n\nPeriodIndex converted to Daily Frequency:\nPeriodIndex(['2026-01-01', '2026-02-01', '2026-03-01'],\n            dtype='period[D]')\n\nPeriodIndex converted to Daily Frequency (End):\nPeriodIndex(['2026-01-31', '2026-02-28', '2026-03-31'],\n            dtype='period[D]')\n\t\nConvert Series and DataFrame objects indexed by timestamps to periods with the to_period method."
+        },
+        {
+          "letter": "F",
+          "title": "Convert Series and DataFrame to periods",
+          "video": null,
+          "code": "import pandas as pd\n\n--------------------------------------------------\n 1. Create a Series with timestamp index\n--------------------------------------------------\n\ndates = pd.to_datetime([\n    '2026-01-10',\n    '2026-02-15',\n    '2026-03-20',\n    '2026-04-25'\n])\n\nsales = pd.Series(\n    [1000, 1500, 1800, 2200],\n    index=dates\n)\n\nprint(\"Original Series:\")\nprint(sales)\n\n\n--------------------------------------------------\n 2. Convert Series from timestamps to monthly periods\n-------------------------------------------------\n\nperiod_series = sales.to_period('M')\n\nprint(\"\\nSeries converted to Monthly Periods:\")\nprint(period_series)\n\n\n--------------------------------------------------\n3. Create a DataFrame with timestamp index\n--------------------------------------------------\n\ndf = pd.DataFrame(\n    {\n        'Sales': [1000, 1500, 1800, 2200],\n        'Profit': [200, 300, 400, 500]\n    },\n    index=dates\n)\n\nprint(\"\\nOriginal DataFrame:\")\nprint(df)\n\n\n --------------------------------------------------\n 4. Convert DataFrame to monthly periods\n --------------------------------------------------\n\nperiod_df = df.to_period('M')\n\nprint(\"\\nDataFrame converted to Monthly Periods:\")\nprint(period_df)\n\nSample Output\n1. Original Series\nOriginal Series:\n2026-01-10    1000\n2026-02-15    1500\n2026-03-20    1800\n2026-04-25    2200\ndtype: int64\n2. Series Converted to Monthly Periods\nSeries converted to Monthly Periods:\n2026-01    1000\n2026-02    1500\n2026-03    1800\n2026-04    2200\nFreq: M, dtype: int64\n3. Original DataFrame\nOriginal DataFrame:\n            Sales  Profit\n2026-01-10   1000     200\n2026-02-15   1500     300\n2026-03-20   1800     400\n2026-04-25   2200     500\n4. DataFrame Converted to Monthly Periods\nDataFrame converted to Monthly Periods:\n         Sales  Profit\n2026-01   1000     200\n2026-02   1500     300\n2026-03   1800     400\n2026-04   2200     500\n\nFreq: M\n\n\n\n\n\tPerform resampling, downsampling and upsampling for the time series."
+        },
+        {
+          "letter": "G",
+          "title": "Resampling, downsampling and upsampling",
+          "video": null,
+          "code": "import pandas as pd\n\n --------------------------------------------------\n 1. Create an hourly time series\n --------------------------------------------------\n\ndates = pd.date_range(\n    start='2026-01-01 00:00',\n    periods=12,\n    freq='h'\n)\n\nvalues = [10, 12, 15, 14, 18, 20,\n          22, 21, 25, 28, 30, 32]\n\ntime_series = pd.Series(\n    values,\n    index=dates\n)\n\nprint(\"Original Hourly Time Series:\")\nprint(time_series)\n\n\n --------------------------------------------------\n 2. Resampling - calculate 3-hourly mean\n --------------------------------------------------\n\nresampled = time_series.resample('3h').mean()\n\nprint(\"\\nResampled Time Series - 3 Hour Mean:\")\nprint(resampled)\n\n\n --------------------------------------------------\n 3. Downsampling - Hourly to 4-hourly\n --------------------------------------------------\n\ndownsampled = time_series.resample('4h').sum()\n\nprint(\"\\nDownsampled Time Series - 4 Hour Sum:\")\nprint(downsampled)\n\n\n --------------------------------------------------\n 4. Upsampling - Hourly to 30-minute intervals\n --------------------------------------------------\n\nupsampled = time_series.resample('30min').asfreq()\n\nprint(\"\\nUpsampled Time Series - 30 Minute:\")\nprint(upsampled)\n\n\n --------------------------------------------------\n 5. Upsampling with Forward Fill\n --------------------------------------------------\n\nupsampled_ffill = time_series.resample('30min').ffill()\n\nprint(\"\\nUpsampled Time Series using Forward Fill:\")\nprint(upsampled_ffill)\n\nSample Output\n1. Original Time Series\nOriginal Hourly Time Series:\n\n2026-01-01 00:00:00    10\n2026-01-01 01:00:00    12\n2026-01-01 02:00:00    15\n2026-01-01 03:00:00    14\n2026-01-01 04:00:00    18\n2026-01-01 05:00:00    20\n2026-01-01 06:00:00    22\n2026-01-01 07:00:00    21\n2026-01-01 08:00:00    25\n2026-01-01 09:00:00    28\n2026-01-01 10:00:00    30\n2026-01-01 11:00:00    32\nFreq: h, dtype: int64\n\n2. Resampling\nThe hourly data is resampled into 3-hour intervals and the mean is calculated.\nResampled Time Series - 3 Hour Mean:\n\n2026-01-01 00:00:00    12.333333\n2026-01-01 03:00:00    17.333333\n2026-01-01 06:00:00    22.666667\n2026-01-01 09:00:00    30.000000\nFreq: 3h, dtype: float64\nFor example:\n(10 + 12 + 15) / 3 = 12.33\n\n3. Downsampling\nHourly data is reduced to 4-hour intervals and the values are summed.\nDownsampled Time Series - 4 Hour Sum:\n\n2026-01-01 00:00:00    51\n2026-01-01 04:00:00    81\n2026-01-01 08:00:00    115\nFreq: 4h, dtype: int64\nFor example:\n10 + 12 + 15 + 14 = 51\n\n4. Upsampling\nHourly data is increased to 30-minute intervals.\nUpsampled Time Series - 30 Minute:\n\n2026-01-01 00:00:00    10.0\n2026-01-01 00:30:00     NaN\n2026-01-01 01:00:00    12.0\n2026-01-01 01:30:00     NaN\n2026-01-01 02:00:00    15.0\n2026-01-01 02:30:00     NaN\n2026-01-01 03:00:00    14.0\n...\nFreq: 30min, dtype: float64\nThe newly created 30-minute timestamps contain NaN because no original observation exists at those times.\n\n5. Upsampling Using Forward Fill\nThe missing values can be filled using ffill():\nUpsampled Time Series using Forward Fill:\n\n2026-01-01 00:00:00    10\n2026-01-01 00:30:00    10\n2026-01-01 01:00:00    12\n2026-01-01 01:30:00    12\n2026-01-01 02:00:00    15\n2026-01-01 02:30:00    15\n2026-01-01 03:00:00    14\n...\nFreq: 30min, dtype: int64\n\nMy Programs : \nTime Series Analysis\na. Create Time Series\n\nrng = pd.date_range('2023-01-01', periods=6, freq='D')\nts = pd.Series(np.random.randn(len(rng)), index=rng)\nprint(ts)\n\nb. Time Zone Conversion\n\nts_utc = ts.tz_localize('UTC')\nts_ind = ts_utc.tz_convert('Asia/Kolkata')\nprint(ts_ind)\n\nc. Period Arithmetic and Conversion\n\np = pd.Period('2024Q1')\nprint(p + 1)\nprint(p.asfreq('M', 'end'))\n\nd. Resampling\n\nts = pd.Series(np.random.randn(100),\n               index=pd.date_range('2024-01-01', periods=100))\nts_monthly = ts.resample('M').mean()\nprint(ts_monthly)"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Data Aggregation with groupby",
+      "previewVideo": null,
+      "youtubeVideo": null,
+      "youtubeLink": null,
+      "githubLink": "https://github.com/jaisimha16",
+      "summary": "Creates a tabular dataset as a DataFrame and splits it into groups using groupby with single and multiple keys, selects single and multiple columns, and computes summary statistics such as mean marks by department and by department and year.",
+      "sections": [
+        {
+          "letter": "A",
+          "title": "Group by single and multiple keys",
+          "video": null,
+          "code": "import pandas as pd\n\n# Create a tabular dataset\ndata = {\n    'Name': ['Ravi', 'Sita', 'Arun', 'Priya', 'Kiran', 'Anil', 'Lakshmi', 'Rahul'],\n    'Department': ['CSE', 'CSE', 'ECE', 'ECE', 'CSE', 'ECE', 'CSE', 'ECE'],\n    'Year': [2, 2, 3, 3, 2, 3, 3, 2],\n    'Marks': [85, 90, 78, 88, 75, 82, 95, 70]\n}\n\n# Create DataFrame\ndf = pd.DataFrame(data)\n\nprint(\"Original DataFrame:\")\nprint(df)\n\n*/ # 1. Group by a SINGLE KEY  */\n\nprint(\"\\n1. Group by Department:\")\n\ngroup1 = df.groupby('Department')\n\nfor name, group in group1:\n    print(\"\\nDepartment:\", name)\n    print(group)\n\n# Calculate average marks for each department\nprint(\"\\nAverage Marks by Department:\")\nprint(df.groupby('Department')['Marks'].mean())\n\n*/ # 2. Group by MULTIPLE KEYS */ \n\nprint(\"\\n2. Group by Department and Year:\")\n\ngroup2 = df.groupby(['Department', 'Year'])\n\nfor name, group in group2:\n    print(\"\\nGroup:\", name)\n    print(group)\n\n# Calculate average marks for each Department and Year\nprint(\"\\nAverage Marks by Department and Year:\")\nprint(df.groupby(['Department', 'Year'])['Marks'].mean())"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Web Scraping and Sentiment Analysis of Product Reviews",
+      "previewVideo": null,
+      "youtubeVideo": null,
+      "youtubeLink": null,
+      "githubLink": "https://github.com/jaisimha16",
+      "summary": "Extracts product reviews with Beautiful Soup, performs exploratory text analysis and WordCloud generation, analyzes stopword, numeric, word, character and average word length distributions, calculates sentiment with NLTK and VADER, and visualizes sentiment intensity with a scatter plot.",
+      "sections": [
+        {
+          "letter": "A",
+          "title": "Web scraping product reviews with Beautiful Soup",
+          "video": null,
+          "code": "For a reproducible experiment, save an authorized review page as reviews.html and run the following code. The CSS selectors must match the structure of the saved page.\nfrom bs4 import BeautifulSoup\nimport pandas as pd\n\n# Read the permitted, locally saved HTML file\nwith open(\"reviews.html\", \"r\", encoding=\"utf-8\") as file:\n    html_content = file.read()\n\nsoup = BeautifulSoup(html_content, \"html.parser\")\n\n# Update these selectors to match the source HTML\nreview_blocks = soup.select(\".review\")\n\nrecords = []\n\nfor block in review_blocks:\n    review_element = block.select_one(\".review-text\")\n    rating_element = block.select_one(\".rating\")\n    title_element = block.select_one(\".review-title\")\n\n    review_text = (\n        review_element.get_text(\" \", strip=True)\n        if review_element else \"\"\n    )\n\n    rating_text = (\n        rating_element.get_text(\" \", strip=True)\n        if rating_element else \"\"\n    )\n\n    title = (\n        title_element.get_text(\" \", strip=True)\n        if title_element else \"\"\n    )\n\n    if review_text:\n        records.append({\n            \"title\": title,\n            \"review\": review_text,\n            \"rating\": rating_text\n        })\n\ndf = pd.DataFrame(records)\n\ndf.to_csv(\"product_reviews.csv\", index=False, encoding=\"utf-8-sig\")\n\nprint(df.head())\nprint(\"Total reviews extracted:\", len(df))\nprint(\"Saved to product_reviews.csv\")"
+        },
+        {
+          "letter": "B",
+          "title": "EDA and WordCloud generation",
+          "video": null,
+          "code": "Run this code after completing Experiment 1. It creates three WordClouds and saves the sentiment labels for reuse in later experiments.\nimport pandas as pd\nimport matplotlib.pyplot as plt\nfrom wordcloud import WordCloud\nfrom vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer\n# Load extracted reviews\ndf = pd.read_csv(\"product_reviews.csv\")\ndf[\"review\"] = df[\"review\"].fillna(\"\").astype(str)\n# Initialize sentiment analyzer\nanalyzer = SentimentIntensityAnalyzer()\ndef classify_sentiment(text):\n    score = analyzer.polarity_scores(text)[\"compound\"]\n    if score >= 0.05:\n        return \"Positive\"\n    elif score <= -0.05:\n        return \"Negative\"\n    return \"Neutral\"\ndf[\"sentiment\"] = df[\"review\"].apply(classify_sentiment)\ndef generate_wordcloud(text, title, filename):\n    if not text.strip():\n        print(f\"No text available for: {title}\")\n        return\n\n    cloud = WordCloud(\n        width=1200,\n        height=600,\n        background_color=\"white\",\n        max_words=150,\n        collocations=False\n    ).generate(text)\n    plt.figure(figsize=(12, 6))\n    plt.imshow(cloud, interpolation=\"bilinear\")\n    plt.axis(\"off\")\n    plt.title(title)\n    plt.tight_layout()\n    plt.savefig(filename, dpi=300, bbox_inches=\"tight\")\n    plt.show()\n# All reviews\nall_text = \" \".join(df[\"review\"])\ngenerate_wordcloud(\n    all_text, \"WordCloud - All Reviews\", \"wordcloud_all.png\"\n)\n# Positive reviews\npositive_text = \" \".join(\n    df.loc[df[\"sentiment\"] == \"Positive\", \"review\"]\n)\ngenerate_wordcloud(\n    positive_text, \"WordCloud - Positive Reviews\",\n    \"wordcloud_positive.png\"\n)\n# Negative reviews\nnegative_text = \" \".join(\n    df.loc[df[\"sentiment\"] == \"Negative\", \"review\"]\n)\ngenerate_wordcloud(\n    negative_text, \"WordCloud - Negative Reviews\",\n    \"wordcloud_negative.png\"\n)\ndf.to_csv(\"product_reviews_analyzed.csv\", index=False)\nprint(df[\"sentiment\"].value_counts())\nprint(\"WordCloud images saved successfully.\")"
+        },
+        {
+          "letter": "C",
+          "title": "Stopword, numeric and length distributions",
+          "video": null,
+          "code": "import re\nimport pandas as pd\nimport nltk\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nfrom nltk.corpus import stopwords\nfrom collections import Counter\n\nnltk.download(\"stopwords\", quiet=True)\n\ndf = pd.read_csv(\"product_reviews.csv\")\ndf[\"review\"] = df[\"review\"].fillna(\"\").astype(str)\n\nstop_words = set(stopwords.words(\"english\"))\n\ndef analyze_review(text):\n    tokens = re.findall(r\"\\b[\\w']+\\b\", text.lower())\n    words = re.findall(r\"\\b[A-Za-z]+\\b\", text)\n    numeric_tokens = re.findall(r\"\\b\\d+(?:\\.\\d+)?\\b\", text)\n\n    stopword_tokens = [\n        token for token in tokens if token in stop_words\n    ]\n\n    return pd.Series({\n        \"word_count\": len(tokens),\n        \"character_count\": len(text),\n        \"numeric_count\": len(numeric_tokens),\n        \"stopword_count\": len(stopword_tokens),\n        \"average_word_length\": (\n            sum(len(word) for word in words) / len(words)\n            if words else 0\n        )\n    })\n\nstatistics = df[\"review\"].apply(analyze_review)\ndf = pd.concat([df, statistics], axis=1)\n\n# Save calculated statistics\ndf.to_csv(\"review_statistics.csv\", index=False)\n\n# Plot distributions\ncolumns = [\n    (\"stopword_count\", \"Stopword Count\"),\n    (\"numeric_count\", \"Numeric Token Count\"),\n    (\"word_count\", \"Word Count\"),\n    (\"character_count\", \"Character Count\"),\n    (\"average_word_length\", \"Average Word Length\")\n]\n\nfig, axes = plt.subplots(3, 2, figsize=(14, 15))\naxes = axes.flatten()\n\nfor i, (column, title) in enumerate(columns):\n    sns.histplot(\n        data=df, x=column, kde=True,\n        ax=axes[i], bins=20\n    )\n    axes[i].set_title(title)\n    axes[i].set_xlabel(title)\n    axes[i].set_ylabel(\"Number of Reviews\")\naxes[-1].axis(\"off\")\nplt.tight_layout()\nplt.savefig(\"review_statistics_distributions.png\", dpi=300)\nplt.show()\n# Most common stopwords\nall_tokens = re.findall(\n    r\"\\b[\\w']+\\b\",\n    \" \".join(df[\"review\"]).lower()\n)\nstopword_frequency = Counter(\n    token for token in all_tokens if token in stop_words\n)\nprint(\"Top 10 stopwords:\")\nprint(stopword_frequency.most_common(10))\n\nprint(\"\\nDescriptive statistics:\")\nprint(df[[\n    \"stopword_count\",\n    \"numeric_count\",\n    \"word_count\",\n    \"character_count\",\n    \"average_word_length\"\n]].describe())"
+        },
+        {
+          "letter": "D",
+          "title": "Sentiment analysis with NLTK and VADER",
+          "video": null,
+          "code": "import pandas as pd\nimport nltk\nfrom nltk.sentiment.vader import SentimentIntensityAnalyzer as NLTKVADER\nfrom vaderSentiment.vaderSentiment import (\n    SentimentIntensityAnalyzer as StandaloneVADER\n)\n\n# Download VADER lexicon for NLTK\nnltk.download(\"vader_lexicon\", quiet=True)\n\ndf = pd.read_csv(\"product_reviews.csv\")\ndf[\"review\"] = df[\"review\"].fillna(\"\").astype(str)\n\n# Initialize both implementations\nnltk_analyzer = NLTKVADER()\nvader_analyzer = StandaloneVADER()\n\ndef classify(score):\n    if score >= 0.05:\n        return \"Positive\"\n    elif score <= -0.05:\n        return \"Negative\"\n    return \"Neutral\"\n\n# NLTK VADER scores\nnltk_scores = df[\"review\"].apply(\n    nltk_analyzer.polarity_scores\n)\n\ndf[\"nltk_positive\"] = nltk_scores.apply(lambda x: x[\"pos\"])\ndf[\"nltk_negative\"] = nltk_scores.apply(lambda x: x[\"neg\"])\ndf[\"nltk_neutral\"] = nltk_scores.apply(lambda x: x[\"neu\"])\ndf[\"nltk_compound\"] = nltk_scores.apply(lambda x: x[\"compound\"])\n\n# Standalone VADER scores\nvader_scores = df[\"review\"].apply(\n    vader_analyzer.polarity_scores\n)\n\ndf[\"vader_positive\"] = vader_scores.apply(lambda x: x[\"pos\"])\ndf[\"vader_negative\"] = vader_scores.apply(lambda x: x[\"neg\"])\ndf[\"vader_neutral\"] = vader_scores.apply(lambda x: x[\"neu\"])\ndf[\"vader_compound\"] = vader_scores.apply(lambda x: x[\"compound\"])\n\ndf[\"nltk_sentiment\"] = df[\"nltk_compound\"].apply(classify)\ndf[\"vader_sentiment\"] = df[\"vader_compound\"].apply(classify)\n\n# Display sample results\nprint(df[[\n    \"review\",\n    \"nltk_compound\",\n    \"nltk_sentiment\",\n    \"vader_compound\",\n    \"vader_sentiment\"\n]].head(10).to_string(index=False))\n\n# Count sentiment categories\nprint(\"\\nNLTK sentiment distribution:\")\nprint(df[\"nltk_sentiment\"].value_counts())\n\nprint(\"\\nStandalone VADER sentiment distribution:\")\nprint(df[\"vader_sentiment\"].value_counts())\n\n# Save output\ndf.to_csv(\"sentiment_analysis_results.csv\", index=False)\nprint(\"\\nResults saved to sentiment_analysis_results.csv\")"
+        },
+        {
+          "letter": "E",
+          "title": "Scatter intensity plot of sentiments",
+          "video": null,
+          "code": "The following code uses the results produced in Experiment 4.\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\n\n# Load sentiment analysis results\ndf = pd.read_csv(\"sentiment_analysis_results.csv\")\n\n# Ensure valid compound scores\ndf[\"vader_compound\"] = pd.to_numeric(\n    df[\"vader_compound\"], errors=\"coerce\"\n)\n\ndf = df.dropna(subset=[\"vader_compound\"]).reset_index(drop=True)\n\n# Assign review indices\ndf[\"review_index\"] = range(1, len(df) + 1)\n\n# Set consistent sentiment colors\npalette = {\n    \"Positive\": \"green\",\n    \"Negative\": \"red\",\n    \"Neutral\": \"gray\"\n}\n\nplt.figure(figsize=(14, 7))\n\nsns.scatterplot(\n    data=df,\n    x=\"review_index\",\n    y=\"vader_compound\",\n    hue=\"vader_sentiment\",\n    palette=palette,\n    s=70,\n    alpha=0.8\n)\n\n# Sentiment classification thresholds\nplt.axhline(\n    y=0.05, color=\"green\", linestyle=\"--\",\n    label=\"Positive threshold\"\n)\nplt.axhline(\n    y=-0.05, color=\"red\", linestyle=\"--\",\n    label=\"Negative threshold\"\n)\nplt.axhline(\n    y=0, color=\"black\", linestyle=\":\",\n    label=\"Neutral reference\"\n)\n\nplt.ylim(-1.05, 1.05)\nplt.xlabel(\"Review Index\")\nplt.ylabel(\"VADER Compound Sentiment Score\")\nplt.title(\"Sentiment Intensity of Product Reviews\")\nplt.legend(loc=\"best\")\nplt.grid(alpha=0.25)\nplt.tight_layout()\n\nplt.savefig(\"sentiment_intensity_scatter.png\", dpi=300)\nplt.show()\n\nprint(\"Scatter intensity plot saved successfully.\")"
+        }
+      ]
+    }  ],
 
   /* =====================================================================
      modules — the five course modules the experiments are organised into.
@@ -551,6 +662,79 @@ var LAB = {
         "Section G — a box plot of marks by department."
       ],
       "result": "The data was visualised successfully with Matplotlib and Seaborn using line, scatter, histogram, bar, stacked bar, density and box plots."
+    },
+    "6": {
+      "aim": "To perform time series analysis in Pandas using datetime objects, date ranges, timezones, periods, period conversion, and resampling, downsampling and upsampling.",
+      "description": "Creates and manipulates time series data indexed by timestamps, generates date ranges, localizes and converts timezones, performs period arithmetic and frequency conversion, converts timestamp-indexed Series and DataFrames to periods, and resamples time series.",
+      "tools": [
+        "Python",
+        "Pandas"
+      ],
+      "procedure": [
+        "Create a time series from datetime objects.",
+        "Generate a DatetimeIndex with date_range.",
+        "Localize and convert timezones.",
+        "Perform period arithmetic.",
+        "Convert period frequencies.",
+        "Convert Series and DataFrame to periods.",
+        "Resample, downsample and upsample."
+      ],
+      "expectedOutput": [
+        "Time Series printed with timestamp index.",
+        "DatetimeIndex generated.",
+        "Timezone converted timestamps.",
+        "Period arithmetic output.",
+        "Converted periods.",
+        "Resampling output."
+      ],
+      "result": "Time series were created and manipulated successfully with Pandas."
+    },
+    "7": {
+      "aim": "To aggregate tabular data using groupby with single and multiple keys and compute summary statistics.",
+      "description": "Creates a DataFrame and groups data by department and by department and year, then computes mean marks for each group.",
+      "tools": [
+        "Python",
+        "Pandas"
+      ],
+      "procedure": [
+        "Create a tabular DataFrame.",
+        "Group by a single key.",
+        "Group by multiple keys.",
+        "Compute average marks."
+      ],
+      "expectedOutput": [
+        "Grouped DataFrames printed.",
+        "Average marks by department and year."
+      ],
+      "result": "Data aggregation using groupby was demonstrated successfully."
+    },
+    "8": {
+      "aim": "To scrape product reviews with Beautiful Soup and analyze them with EDA, WordClouds, text statistics and VADER sentiment analysis.",
+      "description": "Extracts reviews from an authorized HTML source, performs exploratory text analysis, generates WordClouds, analyzes stopword, numeric and length distributions, calculates sentiment with NLTK and VADER, and plots sentiment intensity.",
+      "tools": [
+        "Python",
+        "Pandas",
+        "Beautiful Soup",
+        "NLTK",
+        "VADER",
+        "Matplotlib",
+        "Seaborn",
+        "WordCloud"
+      ],
+      "procedure": [
+        "Scrape reviews to CSV.",
+        "Generate WordClouds.",
+        "Calculate text statistics and distributions.",
+        "Classify sentiment.",
+        "Plot sentiment intensity."
+      ],
+      "expectedOutput": [
+        "product_reviews.csv saved.",
+        "WordCloud images saved.",
+        "Sentiment results saved.",
+        "Scatter plot saved."
+      ],
+      "result": "Product reviews were scraped, analyzed and visualized successfully."
     }
   },
 
