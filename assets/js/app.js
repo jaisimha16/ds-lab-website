@@ -986,6 +986,29 @@
             '<ul class="suggest" id="suggest" role="listbox" aria-label="Search suggestions" hidden></ul>' +
           '</div>' +
           '<p class="search-hint">Search across <b>experiments</b>, <b>modules</b>, <b>tools</b> and <b>libraries</b> — try <kbd>pandas</kbd>, <kbd>module 3</kbd> or <kbd>experiment 5</kbd>.</p>' +
+
+          '<figure class="hero-3d">' +
+            '<div class="hero-3d-stage" id="hero-3d-stage">' +
+              '<img class="hero-layer hero-layer-platform" src="assets/img/hero-layer-platform.' + HERO_EXT + '" width="1400" height="788" loading="lazy" decoding="async" alt="" aria-hidden="true">' +
+              '<img class="hero-layer hero-layer-book" src="assets/img/hero-layer-book.' + HERO_EXT + '" width="1400" height="788" loading="lazy" decoding="async" alt="" aria-hidden="true">' +
+              '<img class="hero-layer hero-layer-brain" src="assets/img/hero-layer-brain.' + HERO_EXT + '" width="1400" height="788" loading="lazy" decoding="async" alt="" aria-hidden="true">' +
+              '<img class="hero-layer hero-layer-panels" src="assets/img/hero-layer-panels.' + HERO_EXT + '" width="1400" height="788" loading="lazy" decoding="async" alt="" aria-hidden="true">' +
+              '<img class="hero-layer hero-layer-particles" src="assets/img/hero-layer-particles.' + HERO_EXT + '" width="1400" height="788" loading="lazy" decoding="async" alt="" aria-hidden="true">' +
+              '<svg class="hero-rings" viewBox="0 0 1400 788" aria-hidden="true" focusable="false">' +
+                '<g class="hero-ring hero-ring-a">' +
+                  '<ellipse cx="700" cy="520" rx="330" ry="62" fill="none" stroke="rgba(34,211,238,.45)" stroke-width="1.6"/>' +
+                '</g>' +
+                '<g class="hero-ring hero-ring-b">' +
+                  '<ellipse cx="700" cy="520" rx="250" ry="46" fill="none" stroke="rgba(139,92,246,.40)" stroke-width="1.4"/>' +
+                '</g>' +
+                '<g class="hero-ring hero-ring-c">' +
+                  '<ellipse cx="700" cy="300" rx="190" ry="34" fill="none" stroke="rgba(103,232,249,.28)" stroke-width="1.2"/>' +
+                '</g>' +
+              '</svg>' +
+            '</div>' +
+            '<figcaption class="sr-only">Animated 3D scene: an open digital book floats above a holographic circular platform, ' +
+              'with a glowing AI brain, floating glass analytics dashboards, charts, metallic data cubes and connected data nodes.</figcaption>' +
+          '</figure>' +
         '</div>' +
 
         idCardHTML() +
@@ -2094,6 +2117,20 @@
   }
 
   /* ---------------- boot ---------------- */
+  /* WebP support check so the 3D hero layers always have a PNG fallback */
+  var WEBP_OK = (function () {
+    try {
+      var c = document.createElement('canvas');
+      return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    } catch (e) { return false; }
+  })();
+  var HERO_EXT = WEBP_OK ? 'webp' : 'png';
+
+  /* pause decorative 3D animations while the tab is in the background */
+  document.addEventListener('visibilitychange', function () {
+    document.documentElement.classList.toggle('is-paused', document.hidden);
+  });
+
   var hamburger = document.getElementById('hamburger');
   if (hamburger) hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleMenu(); });
 

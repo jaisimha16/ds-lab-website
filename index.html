@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#05070a">
+<meta name="theme-color" content="#080D1A">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="Data Science Digital Library: experiments, modules, tools, videos and source code.">
 <title>Data Science Digital Library</title>
@@ -17,9 +17,9 @@
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
 .admin-controls{display:flex;gap:6px;align-items:center;margin-left:8px;flex-wrap:wrap;}
-.admin-btn{cursor:pointer;font:600 12.5px system-ui,sans-serif;padding:7px 13px;border-radius:999px;background:transparent;color:#1b3a2a;border:1px solid rgba(43,106,67,.22);transition:.2s;white-space:nowrap;}
-.admin-btn:hover{background:#f0ebd9;}
-@media (max-width:860px){.admin-controls{order:3;width:100%;justify-content:center;margin:6px 0 0;}.admin-controls .admin-btn{font-size:12px;padding:6px 10px;}}
+.admin-btn{cursor:pointer;font:600 12.5px system-ui,sans-serif;padding:7px 13px;border-radius:999px;background:transparent;color:#E8EEF8;border:1px solid rgba(34,211,238,.32);transition:.2s;white-space:nowrap;}
+.admin-btn:hover{background:rgba(34,211,238,.12);color:#F5F9FF;}
+@media (max-width:1200px){.admin-controls{order:3;width:100%;justify-content:center;margin:6px 0 0;}.admin-controls .admin-btn{font-size:12px;padding:6px 10px;}}
 </style>
 </head>
 <body>
@@ -29,6 +29,41 @@
 <header class="site-header">
   <div class="wrap header-inner">
     <a class="brand" href="#/" aria-label="Data Science Digital Library, home">
+      <span class="brand-emblem" aria-hidden="true">
+        <svg class="emblem-svg" viewBox="0 0 64 64" focusable="false">
+          <defs>
+            <radialGradient id="embCore" cx="38%" cy="30%" r="74%">
+              <stop offset="0" stop-color="#E8EEF8"/><stop offset="26%" stop-color="#67E8F9"/>
+              <stop offset="60%" stop-color="#22D3EE"/><stop offset="100%" stop-color="#8B5CF6"/>
+            </radialGradient>
+            <linearGradient id="embRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#67E8F9"/><stop offset="50%" stop-color="#22D3EE"/><stop offset="100%" stop-color="#8B5CF6"/>
+            </linearGradient>
+            <filter id="embGlow" x="-70%" y="-70%" width="240%" height="240%">
+              <feGaussianBlur stdDeviation="1.5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g class="emblem-orbit emblem-orbit-a">
+            <ellipse cx="32" cy="32" rx="27" ry="10.5" fill="none" stroke="url(#embRing)" stroke-width="2" opacity=".9" filter="url(#embGlow)"/>
+          </g>
+          <g class="emblem-orbit emblem-orbit-b">
+            <ellipse cx="32" cy="32" rx="27" ry="10.5" fill="none" stroke="url(#embRing)" stroke-width="1.3" opacity=".62" filter="url(#embGlow)"/>
+          </g>
+          <g class="emblem-links" stroke="rgba(34,211,238,.5)" stroke-width="1">
+            <line x1="32" y1="32" x2="58" y2="32"/><line x1="32" y1="32" x2="6" y2="32"/>
+            <line x1="32" y1="32" x2="32" y2="8"/><line x1="32" y1="32" x2="32" y2="56"/>
+          </g>
+          <g class="emblem-nodes">
+            <circle class="emblem-node n1" cx="58" cy="32" r="2.7" fill="#67E8F9"/>
+            <circle class="emblem-node n2" cx="6" cy="32" r="2.2" fill="#8B5CF6"/>
+            <circle class="emblem-node n3" cx="32" cy="8" r="2.4" fill="#22D3EE"/>
+            <circle class="emblem-node n4" cx="32" cy="56" r="2.1" fill="#67E8F9"/>
+          </g>
+          <circle class="emblem-core" cx="32" cy="32" r="12" fill="url(#embCore)" filter="url(#embGlow)"/>
+          <ellipse class="emblem-shine" cx="27" cy="26.5" rx="4.2" ry="2.6" fill="rgba(255,255,255,.5)" transform="rotate(-30 27 26.5)"/>
+        </svg>
+      </span>
       <span class="brand-text">
         <b id="brand-lab">Data Science Digital Library</b>
       </span>
