@@ -82,8 +82,8 @@
         ready = true;
         write('sys', 'CPython ' + (m.version || '') + ' ready.');
         if (queued) {
-          var code = queued; queued = null;
-          send(code);
+          var job = queued; queued = null;
+          send(job.code, job.opts);
         } else {
           setLabel('CPython ' + (m.version || '') + ' ready');
         }
@@ -98,7 +98,8 @@
         writeFigure(m.b64);
         break;
       case 'done':
-        setLabel('finished in ' + m.ms + ' ms');
+        setLabel(m.timedOut ? 'stopped (time limit reached)' : 'finished in ' + m.ms + ' ms');
+        if (m.timedOut) { worker = null; ready = false; }
         finish();
         break;
       case 'error':
@@ -128,14 +129,19 @@
     return true;
   }
 
-  function send(code) {
+  function send(code, opts) {
     write('sys', '— run started —');
     running = true;
     setLabel('running…');
-    worker.postMessage({ type: 'run', code: code });
+    worker.postMessage({
+      type: 'run',
+      code: code,
+      stdin: (opts && opts.stdin) || '',
+      timeoutMs: (opts && opts.timeoutMs) || 25000
+    });
   }
 
-  function run(code, host, button) {
+  function run(code, host, button, opts) {
     if (!host) return;
 
     if (running) {
@@ -157,12 +163,12 @@
     prepare(host, button);
 
     if (!ready) {
-      queued = code;
+      queued = { code: code, opts: opts || {} };
       write('sys', 'Starting CPython. The first run downloads the runtime (~10 MB); ' +
         'it is cached after that.');
       return;
     }
-    send(code);
+    send(code, opts);
   }
 
   window.DS_Runner = {

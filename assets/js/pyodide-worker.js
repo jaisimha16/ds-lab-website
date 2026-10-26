@@ -249,7 +249,37 @@ except Exception:
         fig.tight_layout()
         return axes
 
-    for _fn in (scatterplot, histplot, kdeplot, boxplot, pairplot):
+    def load_dataset(name=None, **kw):
+        """Offline replacement for seaborn.load_dataset('iris').
+
+        The real seaborn function downloads the CSV from the internet, which
+        is slow or blocked in the browser sandbox, so the iris data is
+        generated locally with a fixed seed instead. The columns and the
+        three species match the real dataset closely enough for the
+        plotting exercises of Experiment 5."""
+        import numpy as np
+        import pandas as _pd
+        if str(name).lower() != "iris":
+            raise ValueError(
+                "load_dataset('%s') is not available offline in the browser "
+                "sandbox. Only 'iris' is bundled." % name)
+        _rng = np.random.default_rng(7)
+        _specs = [("setosa", 5.01, 3.43, 1.45, 0.20),
+                  ("versicolor", 5.94, 2.77, 4.26, 1.33),
+                  ("virginica", 6.59, 3.00, 5.56, 2.03)]
+        _rows = []
+        for _name, _sl, _sw, _pl, _pw in _specs:
+            for _i in range(60):
+                _rows.append({
+                    "sepal_length": float(_rng.normal(_sl, 0.35)),
+                    "sepal_width": float(_rng.normal(_sw, 0.35)),
+                    "petal_length": float(_rng.normal(_pl, 0.45)),
+                    "petal_width": float(_rng.normal(_pw, 0.20)),
+                    "species": _name
+                })
+        return _pd.DataFrame(_rows)
+
+    for _fn in (scatterplot, histplot, kdeplot, boxplot, pairplot, load_dataset):
         _sns.__dict__[_fn.__name__] = _fn
     _sns.set = lambda *a, **k: None
     _sns.set_style = lambda *a, **k: None
@@ -347,15 +377,47 @@ function boot() {
 
 var pyPromise = boot();
 
+/* Standard input: the page sends the lines typed by the learner and they are
+   exposed to the program through sys.stdin, so input() works normally. */
+function prepareStdin(text) {
+  var lines = String(text || '').split(/\r?\n/);
+  var payload = lines.map(function (l) { return JSON.stringify(l); }).join(', ');
+  return [
+    'import io, sys',
+    '_ds_stdin_lines = [' + payload + ']',
+    '_ds_stdin_buf = io.StringIO("\\n".join(_ds_stdin_lines) + "\\n")',
+    'sys.stdin = _ds_stdin_buf'
+  ].join('\n');
+}
+
 self.onmessage = function (ev) {
   var msg = ev.data || {};
   if (msg.type === 'run') {
     var t0 = Date.now();
+    var timeoutMs = Math.max(2000, Number(msg.timeoutMs) || 25000);
+    var finished = false;
+    var watchdog = setTimeout(function () {
+      if (finished) return;
+      finished = true;
+      post({ type: 'error', text: 'Execution stopped: the program ran longer than ' +
+            Math.round(timeoutMs / 1000) + ' seconds and was terminated.' });
+      post({ type: 'done', ms: Date.now() - t0, timedOut: true });
+      self.close();          /* drop the wedged interpreter */
+    }, timeoutMs);
+
     pyPromise.then(function (p) {
-      return p.runPythonAsync(String(msg.code || ''));
+      return p.runPythonAsync(prepareStdin(msg.stdin)).then(function () {
+        return p.runPythonAsync(String(msg.code || ''));
+      });
     }).then(function () {
+      if (finished) return;
+      finished = true;
+      clearTimeout(watchdog);
       post({ type: 'done', ms: Date.now() - t0 });
     }).catch(function (e) {
+      if (finished) return;
+      finished = true;
+      clearTimeout(watchdog);
       post({ type: 'error', text: (e && e.message ? e.message : String(e)) });
       post({ type: 'done', ms: Date.now() - t0 });
     });

@@ -733,7 +733,8 @@ a.module-card .btn-view{color:var(--indigo)}
 .btn-reset.big{padding:11px 22px;font-size:13.5px}
 
 /* experiment card — bottom action row */
-.exp-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.exp-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.exp-lang{font:600 11px var(--mono);letter-spacing:.4px;color:#04121A;background:linear-gradient(135deg,#22D3EE,#8B5CF6);padding:3px 9px;border-radius:999px;align-self:flex-start}
 .exp-card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(38,54,80,.9)}
 
 .card-btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font:600 12.5px var(--sans);padding:7px 13px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--navy);transition:.2s}
@@ -1704,4 +1705,159 @@ a:hover{color:var(--mn-accent-soft)}
 
 
 
+
+/* ============================================================
+   EXPERIMENT LAB — tabs, editable code lab, video tutorials
+   (Midnight Neon Pro, uses the existing --mn-* tokens)
+   ============================================================ */
+
+/* ---------- tabs ---------- */
+.lab-tabs{
+  display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 18px;
+  border-bottom:1px solid var(--mn-line);padding-bottom:10px
+}
+.lab-tab{
+  border:1px solid var(--mn-line-strong);background:rgba(17,27,48,.7);
+  color:var(--mn-muted);font:600 13.5px var(--sans);
+  padding:9px 18px;border-radius:999px;cursor:pointer;
+  transition:.2s;white-space:nowrap
+}
+.lab-tab:hover{color:var(--mn-text);border-color:rgba(34,211,238,.5);background:rgba(34,211,238,.10)}
+.lab-tab.is-active{
+  color:#04121A;border-color:transparent;
+  background:linear-gradient(135deg,#22D3EE,#8B5CF6);
+  box-shadow:0 0 18px rgba(34,211,238,.35)
+}
+.lab-panel{display:flex;flex-direction:column;gap:18px}
+.lab-panel[hidden]{display:none}
+
+/* ---------- editable code editor ---------- */
+.lab-card{margin-top:0}
+.lab-warn{
+  margin:0;padding:10px 14px;font-size:12.8px;line-height:1.5;
+  color:#ffe1a0;background:rgba(185,138,46,.12);
+  border-bottom:1px solid rgba(185,138,46,.28)
+}
+.lab-editor{
+  position:relative;display:block;
+  min-height:min(46vh,420px);
+  background:#0B1220;
+  border-top:1px solid var(--mn-line);border-bottom:1px solid var(--mn-line)
+}
+.lab-editor .lab-highlight,
+.lab-editor .lab-code{
+  margin:0;padding:16px 18px;
+  font:400 13.4px/1.62 var(--mono);
+  white-space:pre;overflow:auto;
+  border:0;tab-size:4
+}
+.lab-editor .lab-highlight{
+  position:absolute;inset:0;
+  pointer-events:none;color:#E8EEF8;
+  overflow:hidden
+}
+.lab-editor .lab-code{
+  position:relative;display:block;width:100%;height:100%;min-height:min(46vh,420px);
+  background:transparent;color:transparent;caret-color:#22D3EE;
+  resize:vertical;outline:none
+}
+.lab-editor .lab-code::selection{background:rgba(34,211,238,.28);color:transparent}
+.lab-editor:focus-within{box-shadow:inset 0 0 0 1px rgba(34,211,238,.45)}
+
+/* ---------- stdin + lab actions ---------- */
+.lab-io{
+  display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;
+  padding:14px 16px;background:rgba(8,13,26,.6);border-bottom:1px solid var(--mn-line)
+}
+.lab-stdin{flex:1 1 260px;min-width:0}
+.lab-stdin label{
+  display:block;font:600 11.5px var(--mono);letter-spacing:1px;text-transform:uppercase;
+  color:var(--mn-muted);margin-bottom:6px
+}
+.lab-stdin-box{
+  width:100%;font:400 13px/1.5 var(--mono);color:var(--mn-text);
+  background:#0B1220;border:1px solid var(--mn-line-strong);border-radius:10px;padding:9px 11px;resize:vertical
+}
+.lab-stdin-box:focus{outline:none;border-color:#22D3EE;box-shadow:0 0 0 3px rgba(34,211,238,.18)}
+.lab-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:0 1 auto}
+.lab-runtime{font-size:12px;max-width:260px;line-height:1.45}
+.lab-btn{
+  border:1px solid var(--mn-line-strong);background:rgba(34,211,238,.10);
+  color:var(--mn-text);font:600 12.4px var(--sans);
+  padding:7px 13px;border-radius:999px;cursor:pointer;transition:.2s;white-space:nowrap
+}
+.lab-btn:hover{background:rgba(34,211,238,.20);border-color:rgba(34,211,238,.55);transform:translateY(-1px)}
+.lab-btn:focus-visible{outline:2px solid #22D3EE;outline-offset:2px}
+.lab-sample-box{
+  margin:0;padding:12px 14px;font:400 13px/1.6 var(--mono);color:var(--mn-text);
+  background:#0B1220;border:1px solid var(--mn-line);border-radius:10px;overflow:auto;white-space:pre
+}
+
+/* ---------- video tutorial ---------- */
+.video-tutorial{display:flex;flex-direction:column;gap:14px}
+.vt-item{
+  display:flex;flex-direction:column;gap:8px;
+  padding:14px;border:1px solid var(--mn-line);border-radius:14px;background:rgba(13,20,38,.6)
+}
+.vt-meta{display:flex;flex-direction:column;gap:3px}
+.vt-meta b{color:var(--mn-text);font-size:14.5px}
+.vt-source{font:600 11.5px var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--mn-accent-soft)}
+.vt-desc{font-size:13px;color:var(--mn-muted);line-height:1.5}
+.vt-video{width:100%;max-width:720px;border-radius:12px;background:#080D1A;display:block}
+.vt-empty{
+  padding:16px;border:1px dashed var(--mn-line-strong);border-radius:14px;background:rgba(8,13,26,.5)
+}
+.vt-empty b{display:block;color:var(--mn-text);margin-bottom:6px}
+.vt-search{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0}
+.vt-search-link{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;
+  background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.4);color:var(--mn-accent-soft);
+  font:600 12.6px var(--sans);text-decoration:none
+}
+.vt-search-link:hover{background:rgba(34,211,238,.2);color:var(--mn-text);text-decoration:none}
+.vt-search-note{font-size:12.5px;line-height:1.45;flex:1 1 240px}
+
+/* ---------- learning lists ---------- */
+.trouble-list{margin:0;display:flex;flex-direction:column;gap:8px}
+.trouble-list dt{font-weight:600;color:var(--mn-accent-soft);font-size:13.4px}
+.trouble-list dd{margin:0 0 4px;color:var(--mn-text);font-size:13.4px;line-height:1.55}
+.viva-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px}
+.viva-list li{color:var(--mn-text);font-size:13.6px;line-height:1.55}
+.viva-list li b{display:block;color:#fff}
+.viva-list li span{color:var(--mn-muted)}
+.lab-flow{
+  margin:0;padding:14px 16px;font:400 12.6px/1.5 var(--mono);color:var(--mn-accent-soft);
+  background:#0B1220;border:1px solid var(--mn-line);border-radius:12px;overflow:auto;white-space:pre
+}
+.related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.related-card{
+  display:flex;flex-direction:column;gap:4px;text-decoration:none;
+  padding:12px 14px;border:1px solid var(--mn-line);border-radius:12px;background:rgba(17,27,48,.6);
+  transition:.2s
+}
+.related-card:hover{border-color:rgba(34,211,238,.5);transform:translateY(-2px);text-decoration:none}
+.rel-num{font:700 10.5px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--mn-accent-soft)}
+.rel-name{color:var(--mn-text);font-size:13.4px;line-height:1.4}
+
+/* ---------- previous / next experiment ---------- */
+.exp-pager{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:26px 0 0}
+.pager-link{
+  display:flex;flex-direction:column;gap:4px;text-decoration:none;
+  padding:14px 16px;border:1px solid var(--mn-line);border-radius:14px;background:rgba(17,27,48,.6);
+  transition:.2s
+}
+.pager-link:hover{border-color:rgba(34,211,238,.5);transform:translateY(-2px);text-decoration:none}
+.pager-link.is-empty{border-color:transparent;background:none}
+.pager-link.next{text-align:right}
+.pager-dir{font:700 10.5px var(--mono);letter-spacing:1.2px;text-transform:uppercase;color:var(--mn-accent-soft)}
+.pager-name{color:var(--mn-text);font-size:14px;font-weight:600;line-height:1.4}
+
+@media (max-width:640px){
+  .exp-pager{grid-template-columns:1fr}
+  .pager-link.next{text-align:left}
+  .lab-tabs{gap:6px}
+  .lab-tab{padding:8px 14px;font-size:13px}
+  .lab-editor{min-height:min(40vh,320px)}
+  .lab-editor .lab-code{min-height:min(40vh,320px)}
+}
 

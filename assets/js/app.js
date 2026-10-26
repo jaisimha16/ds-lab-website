@@ -416,10 +416,13 @@
 
   function expCardHTML(e) {
     var m = moduleOfExperiment(e);
+    var meta = metaOf(e);
+    var lang = (meta.tools && meta.tools.length) ? meta.tools[0] : 'Python';
     return '<article class="exp-card" data-exp="' + esc(e.id) + '" tabindex="0" role="button" ' +
         'aria-label="Experiment ' + esc(e.id) + ': ' + esc(e.name) + '">' +
         '<div class="exp-card-top">' +
           '<span class="exp-num">Experiment ' + esc(e.id) + '</span>' +
+          '<span class="exp-lang">' + esc(lang) + '</span>' +
           '<span class="exp-mod">Module ' + esc(m.id) + '</span>' +
         '</div>' +
         '<h3>' + esc(e.name) + '</h3>' +
@@ -1261,10 +1264,154 @@
   /* ============================================================
      EXPERIMENT — detailed view
      ============================================================ */
-  function detailView(exp) {
+  /* ---------------- learning content (assets/js/learn.js) ---------------- */
+  function learnOf(exp) {
+    var all = (window.LAB_LEARN || {});
+    return all[String(exp.id)] || {};
+  }
+
+  function learnFixed(exp, letter) {
+    var all = (window.LAB_LEARN || {});
+    var fixed = all.fixedCode || {};
+    return fixed[String(exp.id) + '-' + String(letter)] || null;
+  }
+
+  function learnNotes(exp, letter) {
+    var notes = learnOf(exp).notes || [];
+    for (var i = 0; i < notes.length; i++) {
+      if (String(notes[i].section) === String(letter)) return notes[i].text;
+    }
+    return '';
+  }
+
+  /* ---------------- experiment video tutorial ---------------- */
+  function videoPanelHTML(exp) {
+    var learn = learnOf(exp);
+    var tut = learn.tutorial || {};
+    var out = '';
+
+    out += '<div class="card det-panel video-tutorial">' +
+      '<h3><span class="h-icon">▶</span>Video Tutorial</h3>' +
+      '<p class="muted">Watch the recorded walkthrough of this experiment, then use the search link below for more ' +
+        'tutorials from other channels.</p>';
+
+    if (exp.previewVideo) {
+      out += '<div class="vt-item">' +
+        '<div class="vt-meta"><b>Experiment ' + esc(exp.id) + ' — overview walkthrough</b>' +
+          '<span class="vt-source">Source: MBU Data Science Laboratory (recorded in this project)</span></div>' +
+        '<video class="vt-video" controls preload="none" playsinline ' +
+          'src="' + esc(exp.previewVideo) + '" ' +
+          'aria-label="Recorded walkthrough of experiment ' + esc(exp.id) + '"></video>' +
+      '</div>';
+    }
+
+    exp.sections.forEach(function (sec) {
+      if (!sec.video) return;
+      var note = learnNotes(exp, sec.letter);
+      out += '<div class="vt-item">' +
+        '<div class="vt-meta"><b>Section ' + esc(sec.letter) + ' — ' + esc(sec.title || 'walkthrough') + '</b>' +
+          '<span class="vt-source">Source: MBU Data Science Laboratory (recorded in this project)</span>' +
+          (note ? '<span class="vt-desc">' + esc(note) + '</span>' : '') +
+        '</div>' +
+        '<video class="vt-video" controls preload="none" playsinline ' +
+          'src="' + esc(sec.video) + '" ' +
+          'aria-label="Recorded walkthrough of section ' + esc(sec.letter) + ' of experiment ' + esc(exp.id) + '"></video>' +
+      '</div>';
+    });
+
+    var hasLocal = !!exp.previewVideo || exp.sections.some(function (s) { return !!s.video; });
+    if (!hasLocal) {
+      out += '<div class="vt-empty">' +
+        '<b>No recorded video exists in this project for this experiment.</b>' +
+        '<p class="muted">The experiment files contain the complete source code, but no screen recording has been added ' +
+          'to assets/video yet. Use the search link below to find a matching tutorial, and record your own run in the ' +
+          'Code &amp; Run tab.</p>' +
+      '</div>';
+    }
+
+    if (tut.searchQuery) {
+      var q = encodeURIComponent(tut.searchQuery);
+      out += '<p class="vt-search">' +
+        '<a class="btn-view vt-search-link" href="https://www.youtube.com/results?search_query=' + q + '" ' +
+          'target="_blank" rel="noopener noreferrer">Find a matching tutorial on YouTube ↗</a>' +
+        '<span class="muted vt-search-note">' + esc(tut.note || '') + '</span>' +
+      '</p>';
+    }
+
+    out += '</div>';
+    return out;
+  }
+
+  /* ---------------- code lab (editable editor + console) ---------------- */
+  function labEditorHTML(exp, sec) {
+    var letter = esc(sec.letter);
+    var fixed = learnFixed(exp, sec.letter);
+    var original = sec.code || '';
+    var knownIssue = fixed
+      ? '<p class="lab-warn">Heads up: the stored snippet for this section contains prose or stray comment markers, so it ' +
+        'cannot be executed as it stands. The original text is kept below; “Load Runnable Version” swaps in a corrected, ' +
+        'runnable version of the same program.</p>'
+      : '';
+
+    return '<div class="code-card det-code lab-card" data-lab="' + letter + '">' +
+      '<div class="code-head">' +
+        '<span class="code-title">Section ' + letter + '</span>' +
+        '<span class="sec-code-title">' + esc(sec.title || '') + '</span>' +
+        '<span class="spacer"></span>' +
+        '<button class="run-btn" type="button" data-run-sec="' + letter + '"><span class="run-ico">▶</span> Run</button>' +
+        '<button class="copy-btn" type="button" data-copy-sec="' + letter + '">Copy Code</button>' +
+        '<button class="lab-btn" type="button" data-reset-sec="' + letter + '">↺ Reset Code</button>' +
+        '<button class="lab-btn" type="button" data-clear-sec="' + letter + '">Clear Output</button>' +
+        '<a class="watch-btn" href="#/experiment/' + esc(exp.id) + '/section/' + letter + '">Watch</a>' +
+      '</div>' +
+      knownIssue +
+      '<div class="lab-editor" data-editor="' + letter + '">' +
+        '<pre class="lab-highlight" aria-hidden="true">' + highlightPython(original) + '\n</pre>' +
+        '<textarea class="lab-code" id="lab-code-' + letter + '" spellcheck="false" autocapitalize="off" ' +
+          'autocomplete="off" aria-label="Editable Python source code for section ' + letter + '">' +
+          esc(original) + '</textarea>' +
+      '</div>' +
+      '<div class="lab-io">' +
+        '<div class="lab-stdin">' +
+          '<label for="lab-stdin-' + letter + '">Standard input <span class="muted">(one value per line, only used when the program calls input())</span></label>' +
+          '<textarea id="lab-stdin-' + letter + '" class="lab-stdin-box" rows="3" spellcheck="false" ' +
+            'placeholder="e.g. 10&#10;20"></textarea>' +
+        '</div>' +
+        '<div class="lab-actions">' +
+          (fixed ? '<button class="lab-btn" type="button" data-fixed-sec="' + letter + '">Load Runnable Version</button>' : '') +
+          '<button class="lab-btn" type="button" data-example-sec="' + letter + '">Load Example</button>' +
+          '<span class="lab-runtime muted">Runs in your browser with real CPython (Pyodide) — nothing is sent to a server.</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="run-output" id="run-' + esc(exp.id) + '-' + letter + '" hidden></div>' +
+    '</div>';
+  }
+
+  function labPanelsHTML(exp) {
+    var learn = learnOf(exp);
+    var panels = '';
+
+    exp.sections.forEach(function (sec) {
+      panels += labEditorHTML(exp, sec);
+    });
+
+    if (learn.sampleInput) {
+      panels += '<div class="card det-panel lab-sample">' +
+        '<h3><span class="h-icon">⌨</span>Sample input</h3>' +
+        '<pre class="lab-sample-box">' + esc(learn.sampleInput) + '</pre>' +
+      '</div>';
+    }
+
+    return panels;
+  }
+
+  /* ---------------- overview panels ---------------- */
+  function overviewPanelsHTML(exp) {
     var m = moduleOfExperiment(exp);
     var meta = metaOf(exp);
+    var learn = learnOf(exp);
     var tools = meta.tools || [];
+    var out = '';
 
     var toolChips = tools.length
       ? tools.map(function (name) {
@@ -1276,36 +1423,129 @@
       : '<span class="muted">Not specified</span>';
 
     var procedure = (meta.procedure || []).length
-      ? '<ol class="proc-list">' + meta.procedure.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ol>'
+      ? '<ol class="proc-list">' + meta.procedure.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('')
       : '<p class="muted">No procedure recorded.</p>';
 
     var expected = (meta.expectedOutput || []).length
-      ? '<ul class="bullet-list">' + meta.expectedOutput.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ul>'
+      ? '<ul class="bullet-list">' + meta.expectedOutput.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('')
       : '<p class="muted">No expected output recorded.</p>';
 
-    var extraPanels = '';
-    if (meta.theory || meta.algorithm || meta.requirements) {
-      extraPanels = '<div class="det-grid det-grid-2">' +
-        (meta.theory ? '<div class="card det-panel"><h3><span class="h-icon">📘</span>Theory</h3><p class="pre-wrap">' + esc(meta.theory) + '</p></div>' : '') +
-        (meta.algorithm ? '<div class="card det-panel"><h3><span class="h-icon">🧮</span>Algorithm</h3>' + algorithmHTML(meta.algorithm) + '</div>' : '') +
-        (meta.requirements ? '<div class="card det-panel"><h3><span class="h-icon">🧰</span>Requirements</h3><p class="pre-wrap">' + esc(meta.requirements) + '</p></div>' : '') +
+    out += '<div class="det-grid">' +
+      '<div class="card det-panel"><h3><span class="h-icon">🎯</span>Aim</h3><p>' + esc(meta.aim || exp.summary) + '</p></div>' +
+      '<div class="card det-panel"><h3><span class="h-icon">📝</span>Description</h3><p>' + esc(meta.description || exp.summary) + '</p></div>' +
+      '<div class="card det-panel"><h3><span class="h-icon">🧰</span>Required Software &amp; Libraries</h3><div class="det-tools">' + toolChips + '</div></div>' +
+      '<div class="card det-panel"><h3><span class="h-icon">📋</span>Procedure</h3>' + procedure + '</div>' +
+    '</div>';
+
+    if ((learn.objectives || []).length) {
+      out += '<div class="card det-panel">' +
+        '<h3><span class="h-icon">🎓</span>Learning objectives</h3>' +
+        '<ul class="bullet-list">' + learn.objectives.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ul>' +
       '</div>';
     }
 
-    var codeBlocks = exp.sections.map(function (sec) {
-      return '<div class="code-card det-code">' +
-        '<div class="code-head">' +
-          '<span class="code-title">Section ' + esc(sec.letter) + '</span>' +
-          '<span class="sec-code-title">' + esc(sec.title || '') + '</span>' +
-          '<span class="spacer"></span>' +
-          '<button class="run-btn" type="button" data-run-sec="' + esc(sec.letter) + '"><span class="run-ico">▶</span> Run</button>' +
-          '<a class="watch-btn" href="#/experiment/' + esc(exp.id) + '/section/' + esc(sec.letter) + '">▶ Watch</a>' +
-          '<button class="copy-btn" type="button" data-copy-sec="' + esc(sec.letter) + '">Copy Code</button>' +
-        '</div>' +
-        codeBlockHTML(sec.code) +
-        '<div class="run-output" id="run-' + esc(exp.id) + '-' + esc(sec.letter) + '" hidden></div>' +
+    if (learn.theory) {
+      out += '<div class="card det-panel">' +
+        '<h3><span class="h-icon">📘</span>Theory and concept</h3>' +
+        '<p class="pre-wrap">' + esc(learn.theory) + '</p>' +
       '</div>';
-    }).join('');
+    }
+
+    if ((learn.algorithm || []).length) {
+      out += '<div class="card det-panel">' +
+        '<h3><span class="h-icon">🧮</span>Algorithm</h3>' +
+        '<ol class="proc-list">' + learn.algorithm.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ol>' +
+      '</div>';
+    }
+
+    if (learn.flowchart) {
+      out += '<div class="card det-panel">' +
+        '<h3><span class="h-icon">🔀</span>Logic diagram</h3>' +
+        '<pre class="lab-flow">' + esc(learn.flowchart) + '</pre>' +
+      '</div>';
+    }
+
+    if ((learn.notes || []).length) {
+      out += '<div class="card det-panel">' +
+        '<h3><span class="h-icon">🔍</span>What the code does, section by section</h3>' +
+        '<ul class="bullet-list">' + learn.notes.map(function (n) {
+          return '<li><b>Section ' + esc(n.section) + ':</b> ' + esc(n.text) + '</li>';
+        }).join('') + '</ul>' +
+      '</div>';
+    }
+
+    if ((learn.troubleshooting || []).length) {
+      out += '<div class="card det-panel">' +
+        '<h3><span class="h-icon">🛠</span>Common errors and troubleshooting</h3>' +
+        '<dl class="trouble-list">' + learn.troubleshooting.map(function (t) {
+          return '<dt>' + esc(t.problem) + '</dt><dd>' + esc(t.fix) + '</dd>';
+        }).join('') + '</dl>' +
+      '</div>';
+    }
+
+    out += '<div class="det-grid det-grid-2">' +
+      '<div class="card det-panel"><h3><span class="h-icon">▶</span>Sample input &amp; expected output</h3>' + expected + '</div>' +
+      '<div class="card det-panel"><h3><span class="h-icon">✅</span>Result / conclusion</h3><p>' + esc(meta.result || '') + '</p></div>' +
+    '</div>';
+
+    if ((learn.viva || []).length) {
+      out += '<div class="card det-panel">' +
+        '<h3><span class="h-icon">❓</span>Viva questions with answers</h3>' +
+        '<ol class="viva-list">' + learn.viva.map(function (v) {
+          return '<li><b>' + esc(v.q) + '</b><span>' + esc(v.a) + '</span></li>';
+        }).join('') + '</ol>' +
+      '</div>';
+    }
+
+    var relatedIds = learn.related || [];
+    var relatedHTML = '';
+    if (relatedIds.length) {
+      relatedHTML = relatedIds.map(function (id) {
+        var r = getExperiment(id);
+        if (!r) return '';
+        return '<a class="related-card" href="#/experiment/' + esc(r.id) + '">' +
+          '<span class="rel-num">Experiment ' + esc(r.id) + '</span>' +
+          '<span class="rel-name">' + esc(r.name) + '</span>' +
+        '</a>';
+      }).join('');
+    }
+    if (relatedHTML) {
+      out += '<div class="card det-panel">' +
+        '<h3><span class="h-icon">🔗</span>Related experiments &amp; modules</h3>' +
+        '<div class="related-grid">' + relatedHTML +
+          '<a class="related-card" href="#/module/' + esc(m.id) + '">' +
+            '<span class="rel-num">Module ' + esc(m.id) + '</span>' +
+            '<span class="rel-name">' + esc(m.title) + '</span>' +
+          '</a>' +
+        '</div>' +
+      '</div>';
+    }
+
+    return out;
+  }
+
+  function detailView(exp) {
+    var m = moduleOfExperiment(exp);
+    var list = allExperiments().slice().sort(function (a, b) { return Number(a.id) - Number(b.id); });
+    var pos = 0;
+    for (var i = 0; i < list.length; i++) if (String(list[i].id) === String(exp.id)) pos = i;
+    var prev = list[pos - 1];
+    var next = list[pos + 1];
+
+    var navHTML = '<div class="exp-pager">';
+    if (prev) {
+      navHTML += '<a class="pager-link prev" href="#/experiment/' + esc(prev.id) + '">' +
+        '<span class="pager-dir">← Previous experiment</span>' +
+        '<span class="pager-name">' + esc(prev.name) + '</span></a>';
+    } else {
+      navHTML += '<span class="pager-link is-empty"></span>';
+    }
+    if (next) {
+      navHTML += '<a class="pager-link next" href="#/experiment/' + esc(next.id) + '">' +
+        '<span class="pager-dir">Next experiment →</span>' +
+        '<span class="pager-name">' + esc(next.name) + '</span></a>';
+    }
+    navHTML += '</div>';
 
     return '<section class="page">' +
       crumb([{ label: 'Experiments', href: '#/experiments' }, { label: 'Experiment ' + exp.id }]) +
@@ -1320,27 +1560,39 @@
           '<div class="det-tags">' +
             '<span class="det-tag">Module ' + esc(m.id) + ' · ' + esc(m.title) + '</span>' +
             '<span class="det-tag">' + exp.sections.length + ' sections</span>' +
+            '<span class="det-tag">Python</span>' +
           '</div>' +
-          '<div class="det-tools">' + toolChips + '</div>' +
         '</div>' +
       '</div>' +
 
-      '<div class="det-grid">' +
-        '<div class="card det-panel"><h3><span class="h-icon">🎯</span>Aim</h3><p>' + esc(meta.aim || exp.summary) + '</p></div>' +
-        '<div class="card det-panel"><h3><span class="h-icon">📝</span>Description</h3><p>' + esc(meta.description || exp.summary) + '</p></div>' +
-        '<div class="card det-panel"><h3><span class="h-icon">🧰</span>Required Tools / Libraries</h3><div class="det-tools">' + toolChips + '</div></div>' +
-        '<div class="card det-panel"><h3><span class="h-icon">📋</span>Procedure</h3>' + procedure + '</div>' +
+      '<div class="lab-tabs" role="tablist" aria-label="Experiment sections">' +
+        '<button class="lab-tab is-active" role="tab" type="button" data-tab="overview" ' +
+          'aria-selected="true" aria-controls="lab-panel-overview" id="lab-tab-overview">Overview</button>' +
+        '<button class="lab-tab" role="tab" type="button" data-tab="code" ' +
+          'aria-selected="false" aria-controls="lab-panel-code" id="lab-tab-code">Code &amp; Run</button>' +
+        '<button class="lab-tab" role="tab" type="button" data-tab="video" ' +
+          'aria-selected="false" aria-controls="lab-panel-video" id="lab-tab-video">Video Tutorial</button>' +
       '</div>' +
 
-      extraPanels +
-
-      '<div class="section-head"><h2>Code</h2><p class="section-sub">Every section of Experiment ' + esc(exp.id) + '</p></div>' +
-      codeBlocks +
-
-      '<div class="det-grid det-grid-2">' +
-        '<div class="card det-panel"><h3><span class="h-icon">▶</span>Expected Output</h3>' + expected + '</div>' +
-        '<div class="card det-panel"><h3><span class="h-icon">✅</span>Result</h3><p>' + esc(meta.result || '') + '</p></div>' +
+      '<div class="lab-panel is-active" role="tabpanel" id="lab-panel-overview" aria-labelledby="lab-tab-overview" ' +
+        'data-panel="overview">' +
+        overviewPanelsHTML(exp) +
       '</div>' +
+
+      '<div class="lab-panel" role="tabpanel" id="lab-panel-code" aria-labelledby="lab-tab-code" data-panel="code" hidden>' +
+        '<div class="section-head"><h2>Code &amp; Run</h2>' +
+          '<p class="section-sub">Every section of Experiment ' + esc(exp.id) + ' with an editable editor, ' +
+            'standard input and a live console. CPython runs in your browser — nothing is sent to a server.</p></div>' +
+        labPanelsHTML(exp) +
+      '</div>' +
+
+      '<div class="lab-panel" role="tabpanel" id="lab-panel-video" aria-labelledby="lab-tab-video" data-panel="video" hidden>' +
+        '<div class="section-head"><h2>Video Tutorial</h2>' +
+          '<p class="section-sub">Recorded walkthroughs of this experiment and a link to further tutorials.</p></div>' +
+        videoPanelHTML(exp) +
+      '</div>' +
+
+      navHTML +
 
       '<div class="det-actions">' +
         '<a class="back-link big" href="#/experiments">← Back to Experiments</a>' +
@@ -1353,22 +1605,144 @@
 
   function wireDetail(exp) {
     mountHoverVideo($('#detail-video'), exp.previewVideo);
+
+    /* ---- tabs: Overview / Code & Run / Video Tutorial ---- */
+    var tabs = $$('.lab-tab');
+    function activateTab(name) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('data-tab') === name;
+        t.classList.toggle('is-active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      $$('.lab-panel').forEach(function (p) {
+        var on = p.getAttribute('data-panel') === name;
+        p.classList.toggle('is-active', on);
+        p.hidden = !on;
+      });
+    }
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () { activateTab(t.getAttribute('data-tab')); });
+      t.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
+        ev.preventDefault();
+        var i = tabs.indexOf(t);
+        var next = (i + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        tabs[next].focus();
+        activateTab(tabs[next].getAttribute('data-tab'));
+      });
+    });
+
+    /* ---- code lab: editors, highlight sync, run, reset, stdin ---- */
+    function editorFor(letter) { return document.getElementById('lab-code-' + letter); }
+    function highlightFor(letter) {
+      var wrap = document.querySelector('.lab-editor[data-editor="' + letter + '"]');
+      return wrap ? wrap.querySelector('.lab-highlight') : null;
+    }
+    function syncHighlight(letter) {
+      var ta = editorFor(letter);
+      var pre = highlightFor(letter);
+      if (!ta || !pre) return;
+      pre.innerHTML = highlightPython(ta.value) + '\n';
+      pre.scrollTop = ta.scrollTop;
+      pre.scrollLeft = ta.scrollLeft;
+    }
+
+    $$('.lab-editor[data-editor]').forEach(function (wrap) {
+      var letter = wrap.getAttribute('data-editor');
+      var ta = wrap.querySelector('.lab-code');
+      if (!ta) return;
+      ta.addEventListener('input', function () { syncHighlight(letter); });
+      ta.addEventListener('scroll', function () {
+        var pre = highlightFor(letter);
+        if (pre) { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; }
+      });
+      ta.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Tab') {
+          ev.preventDefault();
+          var s = ta.selectionStart, e = ta.selectionEnd;
+          ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(e);
+          ta.selectionStart = ta.selectionEnd = s + 4;
+          syncHighlight(letter);
+        }
+      });
+    });
+
     $$('.copy-btn[data-copy-sec]').forEach(function (btn) {
       var letter = btn.getAttribute('data-copy-sec');
+      var ta = editorFor(letter);
       var sec = getSection(exp, letter);
-      if (sec) btn.addEventListener('click', function () { copyText(sec.code || '', btn); });
+      if (!ta && !sec) return;
+      btn.addEventListener('click', function () {
+        copyText(ta ? ta.value : (sec.code || ''), btn);
+      });
     });
+
     $$('.run-btn[data-run-sec]').forEach(function (btn) {
       var letter = btn.getAttribute('data-run-sec');
       var sec = getSection(exp, letter);
       var host = document.getElementById('run-' + exp.id + '-' + letter);
+      var ta = editorFor(letter);
+      var stdin = document.getElementById('lab-stdin-' + letter);
       if (!sec || !host) return;
       btn.addEventListener('click', function () {
-        if (window.DS_Runner) window.DS_Runner.run(sec.code || '', host, btn);
+        if (!window.DS_Runner) { showToast('The Python runtime is not available in this browser.'); return; }
+        var code = ta ? ta.value : (sec.code || '');
+        window.DS_Runner.run(code, host, btn, {
+          stdin: stdin ? stdin.value : '',
+          timeoutMs: 25000
+        });
+      });
+    });
+
+    $$('[data-reset-sec]').forEach(function (btn) {
+      var letter = btn.getAttribute('data-reset-sec');
+      var sec = getSection(exp, letter);
+      var ta = editorFor(letter);
+      if (!ta || !sec) return;
+      btn.addEventListener('click', function () {
+        ta.value = sec.code || '';
+        syncHighlight(letter);
+        showToast('Section ' + letter + ' restored to the original source');
+      });
+    });
+
+    $$('[data-clear-sec]').forEach(function (btn) {
+      var letter = btn.getAttribute('data-clear-sec');
+      var host = document.getElementById('run-' + exp.id + '-' + letter);
+      if (!host) return;
+      btn.addEventListener('click', function () {
+        host.hidden = true;
+        host.innerHTML = '';
+      });
+    });
+
+    $$('[data-fixed-sec]').forEach(function (btn) {
+      var letter = btn.getAttribute('data-fixed-sec');
+      var fixed = learnFixed(exp, letter);
+      var ta = editorFor(letter);
+      if (!fixed || !ta) return;
+      btn.addEventListener('click', function () {
+        ta.value = fixed;
+        syncHighlight(letter);
+        showToast('Runnable version loaded for section ' + letter);
+      });
+    });
+
+    $$('[data-example-sec]').forEach(function (btn) {
+      var letter = btn.getAttribute('data-example-sec');
+      var sec = getSection(exp, letter);
+      var ta = editorFor(letter);
+      var stdin = document.getElementById('lab-stdin-' + letter);
+      var learn = learnOf(exp);
+      if (!ta) return;
+      btn.addEventListener('click', function () {
+        ta.value = sec && sec.code ? sec.code : '';
+        syncHighlight(letter);
+        if (stdin) stdin.value = learn.sampleInput || '';
+        showToast('Example loaded for section ' + letter);
       });
     });
   }
-
   /* ============================================================
      MODULES
      ============================================================ */
@@ -1994,8 +2368,8 @@
      router
      ============================================================ */
   function documentTitle(label) {
-    var lab = (LAB && LAB.brand && LAB.brand.laboratory) || 'Data Science Digital Library';
-    document.title = label ? label + ' · ' + lab : lab;
+    var lab = 'Data Science Digital Library';
+    document.title = label ? label + ' · ' + lab : lab + ' | Mohan Babu University';
   }
 
   function notFound() {
@@ -2010,6 +2384,7 @@
   }
 
   function route() {
+    try {
     closeMenu();
     if (!LAB || !LAB.experiments) {
       view().innerHTML = '<section class="page"><div class="card empty-state" style="grid-column:auto">' +
@@ -2084,6 +2459,7 @@
     setActiveNav(nav);
     documentTitle(title);
     window.scrollTo(0, 0);
+    } catch (e) { console.error('ROUTE_ERROR', e && e.stack ? e.stack : e); throw e; }
   }
 
   function view() { return document.getElementById('view'); }
