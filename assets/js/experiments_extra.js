@@ -44,25 +44,6 @@
   }
 ];
 
-  var modules = [
-  {
-    "id": 6,
-    "title": "Customer Personality Analysis",
-    "description": "Segmenting customers with K-Means clustering and turning the segments into marketing strategies.",
-    "expIds": [
-      9
-    ]
-  },
-  {
-    "id": 7,
-    "title": "Text Emotion Detection",
-    "description": "Detecting the emotion in a short text message with a Naive Bayes classifier and CountVectorizer.",
-    "expIds": [
-      10
-    ]
-  }
-];
-
   var meta = {
   "9": {
     "aim": "To analyze customer data and identify different customer segments based on income, age, spending habits, purchasing behaviour and preferences, so that a business can target the right customers, improve products and increase sales while reducing marketing cost.",
@@ -270,7 +251,6 @@
 
 if (typeof LAB !== 'undefined') {
   LAB.experiments = (LAB.experiments || []).concat(experiments);
-  LAB.modules = (LAB.modules || []).concat(modules);
   LAB.meta = LAB.meta || {};
   Object.keys(meta).forEach(function (k) { LAB.meta[k] = meta[k]; });
 }
