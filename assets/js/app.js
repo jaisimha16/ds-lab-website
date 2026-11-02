@@ -453,7 +453,7 @@
         }).join('') + '</ul>'
       : '<p class="module-empty">No experiments assigned yet.</p>';
     return '<a class="module-card" href="#/module/' + esc(m.id) + '">' +
-        '<span class="module-num">Module ' + esc(m.id) + '</span>' +
+        '<span class="module-num">MODULE ' + esc(m.id) + '</span>' +
         '<h3>' + esc(m.title) + '</h3>' +
         '<p>' + esc(m.description) + '</p>' +
         names +
