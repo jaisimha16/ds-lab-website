@@ -343,20 +343,20 @@ var LAB = {
      experiment data above never has to change when the grouping changes.
      ===================================================================== */
   "modules": [
-    { "id": 1, "title": "Data File Handling",
-      "description": "Reading and writing data in CSV, JSON and Excel formats with pandas, and verifying every file by reading it back.",
+    { "id": 1, "title": "Types of Data Analysis",
+      "description": "A structured learning module covering the major approaches used to understand, explain, predict, and support decisions from data, based on modules/DS1.pdf.",
       "expIds": [1] },
-    { "id": 2, "title": "Web Data & Databases",
-      "description": "Fetching live data from a web API and storing, querying, updating and deleting it in an SQLite database.",
+    { "id": 2, "title": "Extracting Meaning from Data",
+      "description": "A learning module on extracting useful information and meaning from raw data, based on modules/DS2.pdf.",
       "expIds": [2] },
-    { "id": 3, "title": "Data Cleaning & Preprocessing",
-      "description": "Handling missing values, encoding text columns, detecting outliers and cleaning strings with regular expressions.",
+    { "id": 3, "title": "Feature Selection and Decision Tree Foundations",
+      "description": "A learning module covering feature types, feature selection methods, redundancy, feature engineering, leakage, validation, decision-tree structure, splitting criteria, pruning, complexity, interpretation, evaluation, and practical workflows, based on modules/DS3.pdf.",
       "expIds": [3] },
-    { "id": 4, "title": "Data Manipulation & Reshaping",
-      "description": "MultiIndex selection, stacking and unstacking tables, and combining multiple DataFrames into one.",
+    { "id": 4, "title": "Ensemble Learning",
+      "description": "A learning module covering ensemble foundations, bagging, bootstrap sampling, random forests, out-of-bag error, boosting, AdaBoost, gradient boosting, voting, stacking, blending, diversity, evaluation, tuning, explainability, applications, and practical workflows, based on modules/DS4.pdf.",
       "expIds": [4] },
-    { "id": 5, "title": "Data Visualisation",
-      "description": "Building line, scatter, histogram, bar, stacked bar, density and box plots with Matplotlib and Seaborn.",
+    { "id": 5, "title": "Dimensionality Reduction",
+      "description": "A learning module covering why high-dimensional data is hard to analyze, and major linear and nonlinear methods such as PCA, SVD, LDA, t-SNE, UMAP, Random Projection, Autoencoders and Manifold Learning, based on modules/DS5.pdf.",
       "expIds": [5] }
   ],
 

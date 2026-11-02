@@ -415,7 +415,6 @@
   }
 
   function expCardHTML(e) {
-    var m = moduleOfExperiment(e);
     var meta = metaOf(e);
     var lang = (meta.tools && meta.tools.length) ? meta.tools[0] : 'Python';
     return '<article class="exp-card" data-exp="' + esc(e.id) + '" tabindex="0" role="button" ' +
@@ -423,7 +422,6 @@
         '<div class="exp-card-top">' +
           '<span class="exp-num">Experiment ' + esc(e.id) + '</span>' +
           '<span class="exp-lang">' + esc(lang) + '</span>' +
-          '<span class="exp-mod">Module ' + esc(m.id) + '</span>' +
         '</div>' +
         '<h3>' + esc(e.name) + '</h3>' +
         '<p class="exp-sum">' + esc(e.summary) + '</p>' +
@@ -1558,7 +1556,7 @@
           '<span class="tag">Experiment ' + esc(exp.id) + '</span>' +
           '<h1>' + esc(exp.name) + '</h1>' +
           '<div class="det-tags">' +
-            '<span class="det-tag">Module ' + esc(m.id) + ' · ' + esc(m.title) + '</span>' +
+            (String(m.id) !== '—' ? '<span class="det-tag">Module ' + esc(m.id) + ' · ' + esc(m.title) + '</span>' : '') +
             '<span class="det-tag">' + exp.sections.length + ' sections</span>' +
             '<span class="det-tag">Python</span>' +
           '</div>' +
